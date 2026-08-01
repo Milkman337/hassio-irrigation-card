@@ -1,6 +1,6 @@
 {
   "name": "hassio-irrigation-card",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A polished Home Assistant Lovelace card and advanced automation blueprint for ESPHome-based sprinkler/irrigation controllers.",
   "keywords": [
     "home-assistant",

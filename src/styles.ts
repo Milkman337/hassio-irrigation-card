@@ -170,23 +170,39 @@ export const cardStyles = css`
   }
 
   .zone-icon {
+    position: relative;
+    display: inline-flex;
     color: var(--state-icon-color, var(--secondary-text-color));
   }
 
   .zone-tile.active .zone-icon {
     color: var(--primary-color);
-    animation: pulse 1.4s ease-in-out infinite;
   }
 
-  @keyframes pulse {
-    0%,
-    100% {
-      transform: scale(1);
-      opacity: 1;
+  .zone-tile.active .zone-icon::before,
+  .zone-tile.active .zone-icon::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2px solid var(--primary-color);
+    opacity: 0;
+    animation: ripple 2s ease-out infinite;
+    pointer-events: none;
+  }
+
+  .zone-tile.active .zone-icon::after {
+    animation-delay: 1s;
+  }
+
+  @keyframes ripple {
+    0% {
+      transform: scale(0.6);
+      opacity: 0.6;
     }
-    50% {
-      transform: scale(1.12);
-      opacity: 0.75;
+    100% {
+      transform: scale(2);
+      opacity: 0;
     }
   }
 
@@ -211,8 +227,8 @@ export const cardStyles = css`
   }
 
   .zone-progress {
-    height: 4px;
-    border-radius: 2px;
+    height: 6px;
+    border-radius: 3px;
     background: var(--divider-color);
     overflow: hidden;
     margin-top: auto;
@@ -220,8 +236,29 @@ export const cardStyles = css`
 
   .zone-progress > div {
     height: 100%;
-    background: var(--primary-color);
+    background-color: var(--primary-color);
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.35) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.35) 50%,
+      rgba(255, 255, 255, 0.35) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: 14px 14px;
+    animation: flow 0.7s linear infinite;
     transition: width 1s linear;
+  }
+
+  @keyframes flow {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 14px 0;
+    }
   }
 
   .zone-duration-row {
@@ -370,6 +407,14 @@ export const cardStyles = css`
     }
     .zones-grid {
       grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .zone-tile.active .zone-icon::before,
+    .zone-tile.active .zone-icon::after,
+    .zone-progress > div {
+      animation: none;
     }
   }
 `;
