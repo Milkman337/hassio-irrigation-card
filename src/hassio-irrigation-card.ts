@@ -283,9 +283,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
               : nothing
           }
         </div>
-        <span class="zone-name" @click=${(e: Event) => this._openMoreInfo(e, zone.config.switch)}
-          >${this._zoneLabel(zone)}</span
-        >
+        <span class="zone-name">${this._zoneLabel(zone)}</span>
         <span class="zone-state">${stateLabel}</span>
         ${
           !zone.active && zone.config.duration_number && !this._config.compact
