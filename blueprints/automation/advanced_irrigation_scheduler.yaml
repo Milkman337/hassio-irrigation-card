@@ -6,7 +6,7 @@ blueprint:
     works with any setup exposing a switch per zone.
 
 
-    Features: fixed daily start times or sun-relative scheduling, per-zone
+    Features: a fixed daily start time or sun-relative scheduling, per-zone
     run durations with a global seasonal multiplier, per-zone enable
     switches, per-zone soil-moisture skip, whole-run rain/freeze/manual
     skip conditions, a controller-online pre-flight check, start/skip/finish
@@ -80,13 +80,16 @@ blueprint:
                   value: fixed_times
                 - label: Relative to sunrise/sunset
                   value: sun
-        start_times:
-          name: Start times
-          description: One or more times of day to start watering (fixed-times mode).
-          default: ["06:00:00"]
+        start_time:
+          name: Start time
+          description: >
+            Time of day to start watering (fixed-times mode). Want more than
+            one start time per day? Create a second automation from this
+            same blueprint with a different start time - simpler and more
+            robust than one automation juggling several.
+          default: "06:00:00"
           selector:
-            time:
-              multiple: true
+            time: {}
         sun_event:
           name: Sun event (sun mode)
           default: sunrise
@@ -343,7 +346,7 @@ variables:
 
 triggers:
   - trigger: time
-    at: !input start_times
+    at: !input start_time
     id: fixed_time
   - trigger: sun
     event: !input sun_event

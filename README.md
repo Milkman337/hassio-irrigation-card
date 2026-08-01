@@ -169,8 +169,10 @@ reload automations.
 ([Gitea raw](https://git.kjan.de/jank/hassio-irrigation-card/raw/branch/main/blueprints/automation/advanced_irrigation_scheduler.yaml) /
 [GitHub raw](https://raw.githubusercontent.com/Milkman337/hassio-irrigation-card/main/blueprints/automation/advanced_irrigation_scheduler.yaml))
 
-- **Schedule**: one or more fixed daily start times, or sunrise/sunset with
-  an offset.
+- **Schedule**: a fixed daily start time, or sunrise/sunset with an offset.
+  Want more than one start time per day? Create a second automation from
+  this blueprint with a different time - the `time` selector doesn't
+  support multiple values, and one automation per time is simpler anyway.
 - **Sequencing mode**: `Native` lets the controller run its own
   auto-advance program (uses whatever multiplier/repeat/enable state is
   already on the device); `Orchestrated` has Home Assistant turn each zone
