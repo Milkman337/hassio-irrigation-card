@@ -1,6 +1,8 @@
-{ pkgs, lib, ... }:
-
 {
+  pkgs,
+  lib,
+  ...
+}: {
   # https://devenv.sh/basics/
   env.PROJECT_NAME = "hassio-irrigation-card";
 
@@ -14,6 +16,7 @@
   packages = with pkgs; [
     jq
     yamllint
+    gitleaks
   ];
 
   # https://devenv.sh/scripts/
