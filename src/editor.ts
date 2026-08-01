@@ -160,6 +160,15 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
       </div>
 
       <div class="section">
+        <h3>Safety</h3>
+        ${this._entityPicker("lawnmower_entity", "Robot lawnmower (optional)", ["lawn_mower"])}
+        <p class="hint">
+          If set, the master switch, zone tiles and Program Settings all lock whenever this mower's
+          state isn't "docked" - stop-all always stays active. Leave empty to disable.
+        </p>
+      </div>
+
+      <div class="section">
         <h3>Zones</h3>
         ${this._config.zones.map((zone, i) => this._renderZoneEditor(zone, i))}
         <button class="btn" @click=${this._addZone}>

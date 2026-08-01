@@ -115,6 +115,29 @@ export const cardStyles = css`
     outline-offset: 2px;
   }
 
+  .master-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    filter: none;
+  }
+
+  .locked-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--ha-card-border-radius, 12px);
+    background: rgba(var(--rgb-error-color, 244, 67, 54), 0.1);
+    color: var(--error-color, #f44336);
+    font-size: 0.82rem;
+  }
+
+  .locked-note ha-icon {
+    --mdc-icon-size: 18px;
+    flex-shrink: 0;
+  }
+
   ha-icon-button.stop-all {
     --mdc-icon-button-size: 44px;
     color: var(--error-color, #f44336);
@@ -160,6 +183,16 @@ export const cardStyles = css`
   .zone-tile.unavailable {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  .zone-tile.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .zone-tile.locked .zone-enable,
+  .zone-tile.locked .stepper {
+    pointer-events: none;
   }
 
   .zone-top {

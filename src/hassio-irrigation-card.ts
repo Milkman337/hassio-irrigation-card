@@ -131,6 +131,12 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     return numberState(this.hass, this._config.repeat_number, 0);
   }
 
+  private get _mowerBlocking(): boolean {
+    const entity = this._config.lawnmower_entity;
+    if (!entity) return false;
+    return this.hass.states[entity]?.state !== "docked";
+  }
+
   private _zoneStates(): ZoneRuntimeState[] {
     if (!this.hass || !this._config) return [];
     return this._config.zones.map((z, i) =>
@@ -159,6 +165,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     const trackerOnline = trackerConfigured
       ? this.hass.states[this._config.device_tracker!]?.state === "home"
       : undefined;
+    const locked = this._mowerBlocking;
 
     return html`
       <ha-card>
@@ -185,9 +192,10 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
           </div>
         </div>
 
-        ${controllerConfigured ? this._renderMasterRow(controllerOn, zoneStates) : nothing}
-        ${zoneStates.length > 0 ? this._renderZones(zoneStates) : this._renderEmptyState()}
-        ${this._renderProgramPanel()}
+        ${locked ? this._renderLockedNote() : nothing}
+        ${controllerConfigured ? this._renderMasterRow(controllerOn, zoneStates, locked) : nothing}
+        ${zoneStates.length > 0 ? this._renderZones(zoneStates, locked) : this._renderEmptyState()}
+        ${this._renderProgramPanel(locked)}
         ${this._config.show_diagnostics ? this._renderDiagnosticsPanel() : nothing}
       </ha-card>
     `;
@@ -210,12 +218,26 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private _renderMasterRow(controllerOn: boolean, zoneStates: ZoneRuntimeState[]): TemplateResult {
+  private _renderLockedNote(): TemplateResult {
+    return html`
+      <div class="locked-note">
+        <ha-icon icon="mdi:robot-mower"></ha-icon>
+        <span>Mower isn't docked - irrigation controls are locked until it's home.</span>
+      </div>
+    `;
+  }
+
+  private _renderMasterRow(
+    controllerOn: boolean,
+    zoneStates: ZoneRuntimeState[],
+    locked: boolean
+  ): TemplateResult {
     return html`
       <div class="master-row">
         <button
           class="master-button"
-          @click=${() => this._toggleSwitch(this._config.controller_switch!)}
+          ?disabled=${locked}
+          @click=${() => !locked && this._toggleSwitch(this._config.controller_switch!)}
         >
           <ha-icon icon=${controllerOn ? "mdi:stop" : "mdi:play"}></ha-icon>
           ${controllerOn ? "Stop Program" : "Start Program"}
@@ -231,18 +253,19 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private _renderZones(zoneStates: ZoneRuntimeState[]): TemplateResult {
+  private _renderZones(zoneStates: ZoneRuntimeState[], locked: boolean): TemplateResult {
     return html`
-      <div class="zones-grid">${zoneStates.map((zone) => this._renderZoneTile(zone))}</div>
+      <div class="zones-grid">${zoneStates.map((zone) => this._renderZoneTile(zone, locked))}</div>
     `;
   }
 
-  private _renderZoneTile(zone: ZoneRuntimeState): TemplateResult {
+  private _renderZoneTile(zone: ZoneRuntimeState, locked: boolean): TemplateResult {
     const classes = [
       "zone-tile",
       zone.active ? "active" : "",
       !zone.enabled ? "disabled" : "",
       zone.unavailable ? "unavailable" : "",
+      locked ? "locked" : "",
     ]
       .filter(Boolean)
       .join(" ");
@@ -262,9 +285,9 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
         class=${classes}
         role="button"
         tabindex="0"
-        @click=${() => !zone.unavailable && this._toggleSwitch(zone.config.switch)}
+        @click=${() => !zone.unavailable && !locked && this._toggleSwitch(zone.config.switch)}
         @keydown=${(e: KeyboardEvent) => {
-          if ((e.key === "Enter" || e.key === " ") && !zone.unavailable) {
+          if ((e.key === "Enter" || e.key === " ") && !zone.unavailable && !locked) {
             e.preventDefault();
             this._toggleSwitch(zone.config.switch);
           }
@@ -277,6 +300,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
               ? html`<ha-switch
                   class="zone-enable"
                   .checked=${zone.enabled}
+                  ?disabled=${locked}
                   @click=${(e: Event) => e.stopPropagation()}
                   @change=${() => this._toggleSwitch(zone.config.enable_switch!)}
                 ></ha-switch>`
@@ -287,7 +311,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
         <span class="zone-state">${stateLabel}</span>
         ${
           !zone.active && zone.config.duration_number && !this._config.compact
-            ? this._renderDurationStepper(zone)
+            ? this._renderDurationStepper(zone, locked)
             : nothing
         }
         ${
@@ -299,16 +323,22 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private _renderDurationStepper(zone: ZoneRuntimeState): TemplateResult {
+  private _renderDurationStepper(zone: ZoneRuntimeState, locked: boolean): TemplateResult {
     const entity = zone.config.duration_number!;
     return html`
       <div class="zone-duration-row">
         <span>${formatDuration(zone.durationSeconds)}</span>
         <div class="stepper">
-          <ha-icon-button @click=${(e: Event) => this._stepNumber(e, entity, -30)}>
+          <ha-icon-button
+            ?disabled=${locked}
+            @click=${(e: Event) => !locked && this._stepNumber(e, entity, -30)}
+          >
             <ha-icon icon="mdi:minus"></ha-icon>
           </ha-icon-button>
-          <ha-icon-button @click=${(e: Event) => this._stepNumber(e, entity, 30)}>
+          <ha-icon-button
+            ?disabled=${locked}
+            @click=${(e: Event) => !locked && this._stepNumber(e, entity, 30)}
+          >
             <ha-icon icon="mdi:plus"></ha-icon>
           </ha-icon-button>
         </div>
@@ -316,7 +346,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private _renderProgramPanel(): TemplateResult | typeof nothing {
+  private _renderProgramPanel(locked: boolean): TemplateResult | typeof nothing {
     const cfg = this._config;
     const hasAny =
       cfg.auto_advance_switch || cfg.reverse_switch || cfg.multiplier_number || cfg.repeat_number;
@@ -348,7 +378,8 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                       ? this._renderSettingSwitch(
                           cfg.auto_advance_switch,
                           "Auto-advance",
-                          "Automatically move on to the next enabled zone"
+                          "Automatically move on to the next enabled zone",
+                          locked
                         )
                       : nothing
                   }
@@ -357,7 +388,8 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                       ? this._renderSettingSwitch(
                           cfg.reverse_switch,
                           "Reverse order",
-                          "Run the zone sequence back to front"
+                          "Run the zone sequence back to front",
+                          locked
                         )
                       : nothing
                   }
@@ -381,6 +413,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                                 max=${multMax}
                                 step=${multStep}
                                 .value=${String(this._multiplier)}
+                                ?disabled=${locked}
                                 @input=${this._onMultiplierInput}
                                 @change=${this._onMultiplierChange}
                               />
@@ -390,7 +423,11 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                         `
                       : nothing
                   }
-                  ${cfg.repeat_number ? this._renderRepeatStepper(cfg.repeat_number) : nothing}
+                  ${
+                    cfg.repeat_number
+                      ? this._renderRepeatStepper(cfg.repeat_number, locked)
+                      : nothing
+                  }
                   ${
                     cfg.show_multiplier_preview !== false
                       ? html`<span class="estimate"
@@ -406,7 +443,12 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private _renderSettingSwitch(entity: string, label: string, secondary: string): TemplateResult {
+  private _renderSettingSwitch(
+    entity: string,
+    label: string,
+    secondary: string,
+    locked = false
+  ): TemplateResult {
     return html`
       <div class="setting-row">
         <div class="setting-label">
@@ -415,13 +457,14 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
         </div>
         <ha-switch
           .checked=${isOn(this.hass, entity)}
+          ?disabled=${locked}
           @change=${() => this._toggleSwitch(entity)}
         ></ha-switch>
       </div>
     `;
   }
 
-  private _renderRepeatStepper(entity: string): TemplateResult {
+  private _renderRepeatStepper(entity: string, locked: boolean): TemplateResult {
     const attrs = this.hass.states[entity]?.attributes;
     const min = attrs?.min ?? 0;
     const max = attrs?.max ?? 10;
@@ -434,14 +477,14 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
         </div>
         <div class="stepper">
           <ha-icon-button
-            ?disabled=${value <= min}
+            ?disabled=${locked || value <= min}
             @click=${() => this._setNumber(entity, Math.max(min, value - 1))}
           >
             <ha-icon icon="mdi:minus"></ha-icon>
           </ha-icon-button>
           <span class="slider-value">${value}</span>
           <ha-icon-button
-            ?disabled=${value >= max}
+            ?disabled=${locked || value >= max}
             @click=${() => this._setNumber(entity, Math.min(max, value + 1))}
           >
             <ha-icon icon="mdi:plus"></ha-icon>

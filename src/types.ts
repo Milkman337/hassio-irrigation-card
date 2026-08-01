@@ -32,6 +32,13 @@ export interface IrrigationCardConfig extends LovelaceCardConfig {
   internet_switch?: string;
   device_tracker?: string;
 
+  /**
+   * Optional lawn_mower.* entity. Whenever its state isn't "docked" (i.e.
+   * the mower is out on the lawn), the master switch, zone tiles and
+   * Program Settings all lock - stop-all stays active regardless.
+   */
+  lawnmower_entity?: string;
+
   zones: ZoneConfig[];
   inputs?: InputConfig[];
 

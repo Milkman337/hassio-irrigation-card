@@ -63,19 +63,20 @@ device (or whatever integration exposes equivalent entities). Everything is
 optional in the card config _except_ the zone switches; leaving the rest
 unset just hides that part of the UI.
 
-| Card config key           | Entity domain    | What it is                                                                              | ESPHome `sprinkler:` source                                |
-| ------------------------- | ---------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `controller_switch`       | `switch`         | Starts/stops the whole multi-zone program                                               | the `sprinkler:` component's main switch                   |
-| `auto_advance_switch`     | `switch`         | Auto-advance to the next zone                                                           | `sprinkler:` `auto_advance_switch`                         |
-| `reverse_switch`          | `switch`         | Run the zone sequence back to front                                                     | `sprinkler:` `reverse_switch`                              |
-| `multiplier_number`       | `number`         | Scales every zone's run time (e.g. `x1.0`)                                              | `sprinkler:` `multiplier_number`                           |
-| `repeat_number`           | `number`         | How many extra times to repeat the program                                              | `sprinkler:` `repeat_number`                               |
-| `internet_switch`         | `switch`         | Device-level network/API access toggle (if your board exposes one)                      | board-specific                                             |
-| `device_tracker`          | `device_tracker` | Online/offline + IP for the controller                                                  | automatic if the device uses the `wifi:`/`api:` components |
-| `zones[].switch`          | `switch`         | Opens/closes that zone's valve                                                          | per-valve switch                                           |
-| `zones[].enable_switch`   | `switch`         | Include/exclude the zone from the auto sequence                                         | per-valve `enable_switch`                                  |
-| `zones[].duration_number` | `number`         | That zone's run duration, in seconds                                                    | per-valve `run_duration_number`                            |
-| `inputs[].entity`         | `binary_sensor`  | Any extra digital input you want surfaced (rain sensor, flow alarm, manual button, ...) | board-specific GPIO binary sensors                         |
+| Card config key           | Entity domain    | What it is                                                                                  | ESPHome `sprinkler:` source                                |
+| ------------------------- | ---------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `controller_switch`       | `switch`         | Starts/stops the whole multi-zone program                                                   | the `sprinkler:` component's main switch                   |
+| `auto_advance_switch`     | `switch`         | Auto-advance to the next zone                                                               | `sprinkler:` `auto_advance_switch`                         |
+| `reverse_switch`          | `switch`         | Run the zone sequence back to front                                                         | `sprinkler:` `reverse_switch`                              |
+| `multiplier_number`       | `number`         | Scales every zone's run time (e.g. `x1.0`)                                                  | `sprinkler:` `multiplier_number`                           |
+| `repeat_number`           | `number`         | How many extra times to repeat the program                                                  | `sprinkler:` `repeat_number`                               |
+| `internet_switch`         | `switch`         | Device-level network/API access toggle (if your board exposes one)                          | board-specific                                             |
+| `device_tracker`          | `device_tracker` | Online/offline + IP for the controller                                                      | automatic if the device uses the `wifi:`/`api:` components |
+| `lawnmower_entity`        | `lawn_mower`     | Locks the whole card unless this entity is `docked` - see [below](#robot-lawnmower-lockout) | not part of the controller - your mower integration        |
+| `zones[].switch`          | `switch`         | Opens/closes that zone's valve                                                              | per-valve switch                                           |
+| `zones[].enable_switch`   | `switch`         | Include/exclude the zone from the auto sequence                                             | per-valve `enable_switch`                                  |
+| `zones[].duration_number` | `number`         | That zone's run duration, in seconds                                                        | per-valve `run_duration_number`                            |
+| `inputs[].entity`         | `binary_sensor`  | Any extra digital input you want surfaced (rain sensor, flow alarm, manual button, ...)     | board-specific GPIO binary sensors                         |
 
 If your entity IDs all share a common prefix (which is the ESPHome default,
 e.g. `switch.<device>_zone_1`, `number.<device>_zone_1_run_duration`, ...),
@@ -143,6 +144,7 @@ multiplier_number: number...
 repeat_number: number...
 internet_switch: switch...
 device_tracker: device_tracker...
+lawnmower_entity: lawn_mower... # optional, see "Robot lawnmower lockout" below
 
 zones: # required, at least one zone
   - name: Front Lawn # optional, falls back to friendly_name / "Zone N"
@@ -156,6 +158,18 @@ inputs: # optional
     name: Rain Sensor # optional
     icon: mdi:weather-rainy # optional
 ```
+
+### Robot lawnmower lockout
+
+Set `lawnmower_entity` to a `lawn_mower.*` entity (Husqvarna Automower,
+Worx Landroid, etc.) and the card locks itself - master switch, every zone
+tile (tap-to-toggle, enable switch, duration steppers), and Program
+Settings - whenever that entity's state isn't `docked`. A banner explains
+why. The emergency **stop-all** button is deliberately exempt so it's
+never itself lockable, and the Diagnostics panel is unaffected since
+nothing in it turns water on. Anything other than exactly `docked`
+(including `unavailable`/`unknown`) locks the card - fails safe if the
+mower's state can't be confirmed.
 
 ## Automation blueprints
 
