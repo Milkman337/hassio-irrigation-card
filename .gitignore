@@ -7,7 +7,10 @@ secrets.yaml
 # Node
 node_modules/
 npm-debug.log*
-dist/
+# The built card bundle IS committed (dist/hassio-irrigation-card.js) so it
+# has a stable raw-file URL for manual/no-build installs - see README.
+# Only its sourcemap is ignored to keep the repo lean.
+dist/*.map
 *.tsbuildinfo
 
 # Nix / devenv

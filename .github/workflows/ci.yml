@@ -30,6 +30,13 @@ jobs:
         run: |
           devenv shell -- bash -lc "npm ci && npm run typecheck && npm run build && npm run lint"
 
+      - name: Verify committed dist/ matches src/
+        run: |
+          if ! git diff --exit-code -- dist/hassio-irrigation-card.js; then
+            echo "::error::dist/hassio-irrigation-card.js is stale - run 'npm run build' and commit the result."
+            exit 1
+          fi
+
       - name: Secret scan (gitleaks)
         run: |
           devenv shell -- scan

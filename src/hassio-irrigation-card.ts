@@ -25,7 +25,7 @@ import {
   isUnavailable,
   numberState,
 } from "./helpers";
-import type { IrrigationCardConfig, ZoneRuntimeState } from "./types";
+import type { InputConfig, IrrigationCardConfig, ZoneRuntimeState } from "./types";
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -381,16 +381,8 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                                 max=${multMax}
                                 step=${multStep}
                                 .value=${String(this._multiplier)}
-                                @input=${(e: InputEvent) => {
-                                this._multiplierDraft = Number(
-                                  (e.target as HTMLInputElement).value
-                                );
-                              }}
-                                @change=${(e: Event) => {
-                                const value = Number((e.target as HTMLInputElement).value);
-                                this._setNumber(cfg.multiplier_number!, value);
-                                this._multiplierDraft = null;
-                              }}
+                                @input=${this._onMultiplierInput}
+                                @change=${this._onMultiplierChange}
                               />
                               <span class="slider-value">×${this._multiplier.toFixed(1)}</span>
                             </div>
@@ -483,32 +475,40 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                     cfg.inputs && cfg.inputs.length > 0
                       ? html`
                           <div class="chips">
-                            ${cfg.inputs.map((input) => {
-                            const on = isOn(this.hass, input.entity);
-                            const name =
-                              input.name ??
-                              this.hass.states[input.entity]?.attributes?.friendly_name ??
-                              input.entity;
-                            return html`
-                              <span
-                                class="chip ${on ? "on" : ""}"
-                                @click=${(e: Event) => this._openMoreInfo(e, input.entity)}
-                              >
-                                <ha-icon icon=${input.icon ?? DEFAULT_INPUT_ICON}></ha-icon>
-                                ${name}
-                              </span>
-                            `;
-                          })}
+                            ${cfg.inputs.map((input) => this._renderInputChip(input))}
                           </div>
                         `
                       : nothing
                   }
-                  ${cfg.internet_switch ? this._renderSettingSwitch(cfg.internet_switch, "Internet access", "Device network/API access") : nothing}
+                  ${
+                    cfg.internet_switch
+                      ? this._renderSettingSwitch(
+                          cfg.internet_switch,
+                          "Internet access",
+                          "Device network/API access"
+                        )
+                      : nothing
+                  }
                   ${cfg.device_tracker ? this._renderTrackerRow(cfg.device_tracker) : nothing}
                 </div>
               `
         }
       </section>
+    `;
+  }
+
+  private _renderInputChip(input: InputConfig): TemplateResult {
+    const on = isOn(this.hass, input.entity);
+    const name =
+      input.name ?? this.hass.states[input.entity]?.attributes?.friendly_name ?? input.entity;
+    return html`
+      <span
+        class="chip ${on ? "on" : ""}"
+        @click=${(e: Event) => this._openMoreInfo(e, input.entity)}
+      >
+        <ha-icon icon=${input.icon ?? DEFAULT_INPUT_ICON}></ha-icon>
+        ${name}
+      </span>
     `;
   }
 
@@ -542,6 +542,16 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
   private _setNumber(entityId: string, value: number): void {
     this.hass.callService("number", "set_value", { entity_id: entityId, value });
   }
+
+  private _onMultiplierInput = (e: InputEvent): void => {
+    this._multiplierDraft = Number((e.target as HTMLInputElement).value);
+  };
+
+  private _onMultiplierChange = (e: Event): void => {
+    const value = Number((e.target as HTMLInputElement).value);
+    this._setNumber(this._config.multiplier_number!, value);
+    this._multiplierDraft = null;
+  };
 
   private _stepNumber(e: Event, entityId: string, delta: number): void {
     e.stopPropagation();

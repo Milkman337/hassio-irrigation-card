@@ -3,11 +3,17 @@
 [![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions?workflow=ci.yml)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
-Repository: **https://git.kjan.de/jank/hassio-irrigation-card**
-(self-hosted [Gitea](https://about.gitea.com/), Actions-enabled)
+Repository: **https://git.kjan.de/jank/hassio-irrigation-card** (self-hosted
+[Gitea](https://about.gitea.com/), Actions-enabled - this is where CI runs
+and where the code actually lives). Mirrored to
+**https://github.com/Milkman337/hassio-irrigation-card** so it's
+HACS-installable (see [Installation](#installation)) - open issues/PRs
+against whichever remote you prefer.
 
 ```sh
 git clone https://git.kjan.de/jank/hassio-irrigation-card.git
+# or, from the GitHub mirror:
+git clone https://github.com/Milkman337/hassio-irrigation-card.git
 ```
 
 A polished [Home Assistant](https://www.home-assistant.io/) Lovelace card and
@@ -79,24 +85,41 @@ and every zone it can find.
 
 ## Installation
 
-### HACS (custom repository)
+### HACS (via the GitHub mirror)
 
-1. HACS -> the 3-dot menu -> **Custom repositories**.
-2. Add `https://git.kjan.de/jank/hassio-irrigation-card`, category
-   **Dashboard**.
-3. Install **Sprinkler Irrigation Card**, then add the resource if HACS
-   didn't do it automatically (Settings -> Dashboards -> Resources ->
-   `/hacsfiles/hassio-irrigation-card/hassio-irrigation-card.js`, type
-   _JavaScript Module_).
+> HACS's "custom repositories" feature only understands **GitHub** repos -
+> it pulls metadata/releases straight from GitHub's API, so it can't add a
+> repo directly from a self-hosted Gitea/Forgejo/GitLab instance. That's
+> what the mirror at
+> [github.com/Milkman337/hassio-irrigation-card](https://github.com/Milkman337/hassio-irrigation-card)
+> is for.
 
-### Manual
+1. HACS -> the 3-dot menu (top right) -> **Custom repositories**.
+2. Repository: `https://github.com/Milkman337/hassio-irrigation-card`,
+   type **Dashboard**.
+3. Find **Sprinkler Irrigation Card** in HACS and install it (no tagged
+   release exists yet, so HACS will offer the `main` branch - that's
+   expected). Add the Lovelace resource if HACS didn't do it automatically.
 
-1. Build the card (`npm install && npm run build`, or via the Nix dev
-   shell - see [Development](#development)), or grab
-   `hassio-irrigation-card.js` from the latest CI run's build artifact
-   (repo -> **Actions** -> latest `CI` run -> **Artifacts**), or from a
-   [release](https://git.kjan.de/jank/hassio-irrigation-card/releases) if
-   one exists.
+### Manual (no HACS, works from either remote)
+
+1. Get `hassio-irrigation-card.js`, either:
+   - build it yourself: `npm install && npm run build` (or via the Nix dev
+     shell - see [Development](#development)) produces
+     `dist/hassio-irrigation-card.js`; or
+   - grab the artifact from the latest green
+     [CI run](https://git.kjan.de/jank/hassio-irrigation-card/actions)
+     (**Artifacts** on the run summary page); or
+   - download the pre-built bundle straight onto your HA host - the repo
+     tracks `dist/hassio-irrigation-card.js` for exactly this (see
+     [Development](#development) for how it's kept in sync):
+     ```sh
+     wget -O /config/www/hassio-irrigation-card.js \
+       https://git.kjan.de/jank/hassio-irrigation-card/raw/branch/main/dist/hassio-irrigation-card.js
+     # or, from the GitHub mirror:
+     wget -O /config/www/hassio-irrigation-card.js \
+       https://raw.githubusercontent.com/Milkman337/hassio-irrigation-card/main/dist/hassio-irrigation-card.js
+     ```
 2. Copy it to `<config>/www/hassio-irrigation-card.js`.
 3. Settings -> Dashboards -> Resources -> **Add resource**:
    URL `/local/hassio-irrigation-card.js`, type _JavaScript Module_.
@@ -142,8 +165,9 @@ reload automations.
 
 ### Advanced Irrigation Scheduler
 
-`blueprints/automation/advanced_irrigation_scheduler.yaml` -
-https://git.kjan.de/jank/hassio-irrigation-card/raw/branch/main/blueprints/automation/advanced_irrigation_scheduler.yaml
+`blueprints/automation/advanced_irrigation_scheduler.yaml`
+([Gitea raw](https://git.kjan.de/jank/hassio-irrigation-card/raw/branch/main/blueprints/automation/advanced_irrigation_scheduler.yaml) /
+[GitHub raw](https://raw.githubusercontent.com/Milkman337/hassio-irrigation-card/main/blueprints/automation/advanced_irrigation_scheduler.yaml))
 
 - **Schedule**: one or more fixed daily start times, or sunrise/sunset with
   an offset.
@@ -173,8 +197,9 @@ https://git.kjan.de/jank/hassio-irrigation-card/raw/branch/main/blueprints/autom
 
 ### Irrigation Watchdog / Max Runtime Failsafe
 
-`blueprints/automation/irrigation_watchdog.yaml` -
-https://git.kjan.de/jank/hassio-irrigation-card/raw/branch/main/blueprints/automation/irrigation_watchdog.yaml
+`blueprints/automation/irrigation_watchdog.yaml`
+([Gitea raw](https://git.kjan.de/jank/hassio-irrigation-card/raw/branch/main/blueprints/automation/irrigation_watchdog.yaml) /
+[GitHub raw](https://raw.githubusercontent.com/Milkman337/hassio-irrigation-card/main/blueprints/automation/irrigation_watchdog.yaml))
 
 A second, independent automation: if any watched switch stays `on` longer
 than a configured maximum runtime - for _any_ reason, including the
@@ -240,6 +265,14 @@ devenv via Nix and runs `typecheck`, `build`, `lint`, and the `gitleaks`
 scan on every push/PR, then uploads the built card as a job artifact. Note
 it pins `actions/upload-artifact` to `v3`: Gitea/Forgejo Actions runners
 don't yet support the newer artifact API that `v4`+ requires.
+
+**`dist/hassio-irrigation-card.js` is committed** (unlike most Node
+projects) so there's a stable raw-file URL for the no-build manual install
+above - HACS isn't an option here (see [Installation](#installation)), so
+that's the easiest path for anyone who just wants the card without setting
+up Node/Nix. CI builds and checks it matches `src/` but does **not** commit
+it back, so if you change anything under `src/`, run `build` and commit the
+updated `dist/hassio-irrigation-card.js` yourself in the same change.
 
 **This repository is public - never commit real credentials.** `.env` and
 `.env.*` (besides `.env.example`) are gitignored, and both CI and the
