@@ -210,14 +210,13 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
   private _renderMasterRow(controllerOn: boolean, zoneStates: ZoneRuntimeState[]): TemplateResult {
     return html`
       <div class="master-row">
-        <mwc-button
+        <button
           class="master-button"
-          raised
           @click=${() => this._toggleSwitch(this._config.controller_switch!)}
         >
-          <ha-icon slot="icon" icon=${controllerOn ? "mdi:stop" : "mdi:play"}></ha-icon>
+          <ha-icon icon=${controllerOn ? "mdi:stop" : "mdi:play"}></ha-icon>
           ${controllerOn ? "Stop Program" : "Start Program"}
-        </mwc-button>
+        </button>
         <ha-icon-button
           class="stop-all"
           title="Emergency stop - closes every valve immediately"

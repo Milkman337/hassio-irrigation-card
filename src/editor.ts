@@ -68,11 +68,33 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
     ha-icon-button.remove {
       color: var(--error-color, #f44336);
     }
-    mwc-button.add {
-      align-self: flex-start;
-    }
     ha-formfield {
       display: block;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      align-self: flex-start;
+      height: 36px;
+      padding: 0 14px;
+      border: 1px solid var(--primary-color);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--primary-color);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn ha-icon {
+      --mdc-icon-size: 18px;
+    }
+    .btn:hover {
+      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+    }
+    .btn:active {
+      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.16);
     }
   `;
 
@@ -115,7 +137,7 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
             .value=${this._prefixHint}
             @input=${(e: Event) => (this._prefixHint = (e.target as HTMLInputElement).value)}
           ></ha-textfield>
-          <mwc-button @click=${this._autoDetect}>Detect</mwc-button>
+          <button class="btn" @click=${this._autoDetect}>Detect</button>
         </div>
       </div>
 
@@ -133,10 +155,10 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
       <div class="section">
         <h3>Zones</h3>
         ${this._config.zones.map((zone, i) => this._renderZoneEditor(zone, i))}
-        <mwc-button class="add" @click=${this._addZone}>
-          <ha-icon icon="mdi:plus" slot="icon"></ha-icon>
+        <button class="btn" @click=${this._addZone}>
+          <ha-icon icon="mdi:plus"></ha-icon>
           Add zone
-        </mwc-button>
+        </button>
       </div>
 
       <div class="section">
@@ -145,10 +167,10 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
         ${this._entityPicker("device_tracker", "Controller device tracker", ["device_tracker"])}
         <h3 style="margin-top:8px;">Sensor inputs</h3>
         ${(this._config.inputs ?? []).map((input, i) => this._renderInputEditor(input, i))}
-        <mwc-button class="add" @click=${this._addInput}>
-          <ha-icon icon="mdi:plus" slot="icon"></ha-icon>
+        <button class="btn" @click=${this._addInput}>
+          <ha-icon icon="mdi:plus"></ha-icon>
           Add input
-        </mwc-button>
+        </button>
       </div>
     `;
   }

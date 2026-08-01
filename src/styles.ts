@@ -74,8 +74,45 @@ export const cardStyles = css`
   }
 
   .master-button {
-    --mdc-theme-primary: var(--primary-color);
     flex: 1 1 160px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 999px;
+    background: var(--primary-color);
+    color: var(--text-primary-color, #fff);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    transition:
+      filter 150ms ease,
+      box-shadow 150ms ease,
+      transform 100ms ease;
+  }
+
+  .master-button ha-icon {
+    --mdc-icon-size: 20px;
+  }
+
+  .master-button:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .master-button:active {
+    transform: scale(0.98);
+    filter: brightness(0.94);
+  }
+
+  .master-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
   }
 
   ha-icon-button.stop-all {
