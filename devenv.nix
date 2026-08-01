@@ -32,6 +32,9 @@
   scripts.format.exec = ''
     npm run format
   '';
+  scripts.scan.exec = ''
+    gitleaks detect --source . -v --redact
+  '';
 
   enterShell = ''
     echo ""
@@ -40,6 +43,7 @@
     echo "  watch   - rebuild on file changes"
     echo "  lint    - run eslint + yamllint"
     echo "  format  - run prettier"
+    echo "  scan    - run gitleaks over the repo + git history"
     echo ""
     echo "Copy .env.example to .env with your own HA_URL / HA_TOKEN for local testing."
     echo "Never commit .env - this repo is public."

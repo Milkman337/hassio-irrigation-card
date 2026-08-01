@@ -344,67 +344,69 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
             : html`
                 <div class="panel-body">
                   ${
-                  cfg.auto_advance_switch
-                    ? this._renderSettingSwitch(
-                        cfg.auto_advance_switch,
-                        "Auto-advance",
-                        "Automatically move on to the next enabled zone"
-                      )
-                    : nothing
-                }
+                    cfg.auto_advance_switch
+                      ? this._renderSettingSwitch(
+                          cfg.auto_advance_switch,
+                          "Auto-advance",
+                          "Automatically move on to the next enabled zone"
+                        )
+                      : nothing
+                  }
                   ${
-                  cfg.reverse_switch
-                    ? this._renderSettingSwitch(
-                        cfg.reverse_switch,
-                        "Reverse order",
-                        "Run the zone sequence back to front"
-                      )
-                    : nothing
-                }
+                    cfg.reverse_switch
+                      ? this._renderSettingSwitch(
+                          cfg.reverse_switch,
+                          "Reverse order",
+                          "Run the zone sequence back to front"
+                        )
+                      : nothing
+                  }
                   ${
-                  cfg.multiplier_number
-                    ? html`
-                        <div
-                          class="setting-row"
-                          style="flex-direction:column; align-items:stretch; gap:4px;"
-                        >
-                          <div class="setting-label">
-                            <span class="primary">Duration multiplier</span>
-                            <span class="secondary"
-                              >Scales every zone's run time, e.g. for the season</span
-                            >
+                    cfg.multiplier_number
+                      ? html`
+                          <div
+                            class="setting-row"
+                            style="flex-direction:column; align-items:stretch; gap:4px;"
+                          >
+                            <div class="setting-label">
+                              <span class="primary">Duration multiplier</span>
+                              <span class="secondary"
+                                >Scales every zone's run time, e.g. for the season</span
+                              >
+                            </div>
+                            <div class="slider-row">
+                              <input
+                                type="range"
+                                min=${multMin}
+                                max=${multMax}
+                                step=${multStep}
+                                .value=${String(this._multiplier)}
+                                @input=${(e: InputEvent) => {
+                                this._multiplierDraft = Number(
+                                  (e.target as HTMLInputElement).value
+                                );
+                              }}
+                                @change=${(e: Event) => {
+                                const value = Number((e.target as HTMLInputElement).value);
+                                this._setNumber(cfg.multiplier_number!, value);
+                                this._multiplierDraft = null;
+                              }}
+                              />
+                              <span class="slider-value">×${this._multiplier.toFixed(1)}</span>
+                            </div>
                           </div>
-                          <div class="slider-row">
-                            <input
-                              type="range"
-                              min=${multMin}
-                              max=${multMax}
-                              step=${multStep}
-                              .value=${String(this._multiplier)}
-                              @input=${(e: InputEvent) => {
-                              this._multiplierDraft = Number((e.target as HTMLInputElement).value);
-                            }}
-                              @change=${(e: Event) => {
-                              const value = Number((e.target as HTMLInputElement).value);
-                              this._setNumber(cfg.multiplier_number!, value);
-                              this._multiplierDraft = null;
-                            }}
-                            />
-                            <span class="slider-value">×${this._multiplier.toFixed(1)}</span>
-                          </div>
-                        </div>
-                      `
-                    : nothing
-                }
+                        `
+                      : nothing
+                  }
                   ${cfg.repeat_number ? this._renderRepeatStepper(cfg.repeat_number) : nothing}
                   ${
-                  cfg.show_multiplier_preview !== false
-                    ? html`<span class="estimate"
-                        >Estimated total runtime:
-                        ${formatDuration(this._estimateTotalSeconds)}</span
-                      >`
-                    : nothing
-                }
+                    cfg.show_multiplier_preview !== false
+                      ? html`<span class="estimate"
+                          >Estimated total runtime:
+                          ${formatDuration(this._estimateTotalSeconds)}</span
+                        >`
+                      : nothing
+                  }
                 </div>
               `
         }
@@ -478,29 +480,29 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
             : html`
                 <div class="panel-body">
                   ${
-                  cfg.inputs && cfg.inputs.length > 0
-                    ? html`
-                        <div class="chips">
-                          ${cfg.inputs.map((input) => {
-                          const on = isOn(this.hass, input.entity);
-                          const name =
-                            input.name ??
-                            this.hass.states[input.entity]?.attributes?.friendly_name ??
-                            input.entity;
-                          return html`
-                            <span
-                              class="chip ${on ? "on" : ""}"
-                              @click=${(e: Event) => this._openMoreInfo(e, input.entity)}
-                            >
-                              <ha-icon icon=${input.icon ?? DEFAULT_INPUT_ICON}></ha-icon>
-                              ${name}
-                            </span>
-                          `;
-                        })}
-                        </div>
-                      `
-                    : nothing
-                }
+                    cfg.inputs && cfg.inputs.length > 0
+                      ? html`
+                          <div class="chips">
+                            ${cfg.inputs.map((input) => {
+                            const on = isOn(this.hass, input.entity);
+                            const name =
+                              input.name ??
+                              this.hass.states[input.entity]?.attributes?.friendly_name ??
+                              input.entity;
+                            return html`
+                              <span
+                                class="chip ${on ? "on" : ""}"
+                                @click=${(e: Event) => this._openMoreInfo(e, input.entity)}
+                              >
+                                <ha-icon icon=${input.icon ?? DEFAULT_INPUT_ICON}></ha-icon>
+                                ${name}
+                              </span>
+                            `;
+                          })}
+                          </div>
+                        `
+                      : nothing
+                  }
                   ${cfg.internet_switch ? this._renderSettingSwitch(cfg.internet_switch, "Internet access", "Device network/API access") : nothing}
                   ${cfg.device_tracker ? this._renderTrackerRow(cfg.device_tracker) : nothing}
                 </div>

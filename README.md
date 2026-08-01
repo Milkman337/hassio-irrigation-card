@@ -1,7 +1,14 @@
 # hassio-irrigation-card
 
-![CI](../../actions/workflows/ci.yml/badge.svg)
+[![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions?workflow=ci.yml)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+
+Repository: **https://git.kjan.de/jank/hassio-irrigation-card**
+(self-hosted [Gitea](https://about.gitea.com/), Actions-enabled)
+
+```sh
+git clone https://git.kjan.de/jank/hassio-irrigation-card.git
+```
 
 A polished [Home Assistant](https://www.home-assistant.io/) Lovelace card and
 a matching advanced automation blueprint for multi-zone
@@ -50,19 +57,19 @@ device (or whatever integration exposes equivalent entities). Everything is
 optional in the card config _except_ the zone switches; leaving the rest
 unset just hides that part of the UI.
 
-| Card config key           | Entity domain    | What it is                                                                              | ESPHome `sprinkler:` source                                          |
-| ------------------------- | ---------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `controller_switch`       | `switch`         | Starts/stops the whole multi-zone program                                               | the `sprinkler:` component's main switch                             |
-| `auto_advance_switch`     | `switch`         | Auto-advance to the next zone                                                           | `switch: - platform: template` under `sprinkler.auto_advance_switch` |
-| `reverse_switch`          | `switch`         | Run the zone sequence back to front                                                     | `sprinkler.reverse_switch`                                           |
-| `multiplier_number`       | `number`         | Scales every zone's run time (e.g. `x1.0`)                                              | `sprinkler.multiplier`                                               |
-| `repeat_number`           | `number`         | How many extra times to repeat the program                                              | `sprinkler.repeat`                                                   |
-| `internet_switch`         | `switch`         | Device-level network/API access toggle (if your board exposes one)                      | board-specific                                                       |
-| `device_tracker`          | `device_tracker` | Online/offline + IP for the controller                                                  | automatic if the device uses the `wifi:`/`api:` components           |
-| `zones[].switch`          | `switch`         | Opens/closes that zone's valve                                                          | per-valve switch                                                     |
-| `zones[].enable_switch`   | `switch`         | Include/exclude the zone from the auto sequence                                         | per-valve `enable_switch`                                            |
-| `zones[].duration_number` | `number`         | That zone's run duration, in seconds                                                    | per-valve `run_duration_number`                                      |
-| `inputs[].entity`         | `binary_sensor`  | Any extra digital input you want surfaced (rain sensor, flow alarm, manual button, ...) | board-specific GPIO binary sensors                                   |
+| Card config key           | Entity domain    | What it is                                                                              | ESPHome `sprinkler:` source                                |
+| ------------------------- | ---------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `controller_switch`       | `switch`         | Starts/stops the whole multi-zone program                                               | the `sprinkler:` component's main switch                   |
+| `auto_advance_switch`     | `switch`         | Auto-advance to the next zone                                                           | `sprinkler:` `auto_advance_switch`                         |
+| `reverse_switch`          | `switch`         | Run the zone sequence back to front                                                     | `sprinkler:` `reverse_switch`                              |
+| `multiplier_number`       | `number`         | Scales every zone's run time (e.g. `x1.0`)                                              | `sprinkler:` `multiplier_number`                           |
+| `repeat_number`           | `number`         | How many extra times to repeat the program                                              | `sprinkler:` `repeat_number`                               |
+| `internet_switch`         | `switch`         | Device-level network/API access toggle (if your board exposes one)                      | board-specific                                             |
+| `device_tracker`          | `device_tracker` | Online/offline + IP for the controller                                                  | automatic if the device uses the `wifi:`/`api:` components |
+| `zones[].switch`          | `switch`         | Opens/closes that zone's valve                                                          | per-valve switch                                           |
+| `zones[].enable_switch`   | `switch`         | Include/exclude the zone from the auto sequence                                         | per-valve `enable_switch`                                  |
+| `zones[].duration_number` | `number`         | That zone's run duration, in seconds                                                    | per-valve `run_duration_number`                            |
+| `inputs[].entity`         | `binary_sensor`  | Any extra digital input you want surfaced (rain sensor, flow alarm, manual button, ...) | board-specific GPIO binary sensors                         |
 
 If your entity IDs all share a common prefix (which is the ESPHome default,
 e.g. `switch.<device>_zone_1`, `number.<device>_zone_1_run_duration`, ...),
@@ -75,7 +82,8 @@ and every zone it can find.
 ### HACS (custom repository)
 
 1. HACS -> the 3-dot menu -> **Custom repositories**.
-2. Add this repository's URL, category **Dashboard**.
+2. Add `https://git.kjan.de/jank/hassio-irrigation-card`, category
+   **Dashboard**.
 3. Install **Sprinkler Irrigation Card**, then add the resource if HACS
    didn't do it automatically (Settings -> Dashboards -> Resources ->
    `/hacsfiles/hassio-irrigation-card/hassio-irrigation-card.js`, type
@@ -83,9 +91,12 @@ and every zone it can find.
 
 ### Manual
 
-1. Build the card (`npm run build`, or via the Nix dev shell - see
-   [Development](#development)) or grab `dist/hassio-irrigation-card.js`
-   from a release.
+1. Build the card (`npm install && npm run build`, or via the Nix dev
+   shell - see [Development](#development)), or grab
+   `hassio-irrigation-card.js` from the latest CI run's build artifact
+   (repo -> **Actions** -> latest `CI` run -> **Artifacts**), or from a
+   [release](https://git.kjan.de/jank/hassio-irrigation-card/releases) if
+   one exists.
 2. Copy it to `<config>/www/hassio-irrigation-card.js`.
 3. Settings -> Dashboards -> Resources -> **Add resource**:
    URL `/local/hassio-irrigation-card.js`, type _JavaScript Module_.
@@ -125,12 +136,14 @@ inputs: # optional
 ## Automation blueprints
 
 Import via Settings -> Automations & Scenes -> Blueprints -> **Import
-Blueprint**, and paste the raw file URL, or copy the YAML file into
-`<config>/blueprints/automation/hassio-irrigation-card/`.
+Blueprint**, and paste one of the raw file URLs below, or copy the YAML
+file into `<config>/blueprints/automation/hassio-irrigation-card/` and
+reload automations.
 
 ### Advanced Irrigation Scheduler
 
-`blueprints/automation/advanced_irrigation_scheduler.yaml`
+`blueprints/automation/advanced_irrigation_scheduler.yaml` -
+https://git.kjan.de/jank/hassio-irrigation-card/raw/branch/main/blueprints/automation/advanced_irrigation_scheduler.yaml
 
 - **Schedule**: one or more fixed daily start times, or sunrise/sunset with
   an offset.
@@ -160,7 +173,8 @@ Blueprint**, and paste the raw file URL, or copy the YAML file into
 
 ### Irrigation Watchdog / Max Runtime Failsafe
 
-`blueprints/automation/irrigation_watchdog.yaml`
+`blueprints/automation/irrigation_watchdog.yaml` -
+https://git.kjan.de/jank/hassio-irrigation-card/raw/branch/main/blueprints/automation/irrigation_watchdog.yaml
 
 A second, independent automation: if any watched switch stays `on` longer
 than a configured maximum runtime - for _any_ reason, including the
@@ -183,34 +197,56 @@ blueprint:
 
 ## Development
 
-This repo ships a [Nix flake](flake.nix) plus [devenv](https://devenv.sh)
-config so the whole toolchain (Node.js, TypeScript, esbuild, eslint,
-prettier, yamllint) is reproducible - no globally installed Node needed.
+This repo ships two independent, reproducible ways to get the toolchain
+(Node.js, TypeScript, esbuild, eslint, prettier, yamllint, gitleaks) - pick
+whichever fits your workflow, both install the same tool versions:
 
 ```sh
-# one-time
-direnv allow          # if you use direnv - picks up .envrc automatically
-# or, without direnv:
-nix develop            # drops you into the same shell
+# Option A: direnv (recommended) - picks up .envrc automatically,
+# which loads the devenv.nix shell.
+direnv allow
 
+# Option B: plain Nix, no devenv/direnv required.
+nix develop
+```
+
+Either way, once you're in the shell:
+
+```sh
+npm install            # first time only
 build                  # bundle the card to dist/hassio-irrigation-card.js
 watch                  # rebuild on file changes
 lint                   # eslint + yamllint (incl. the blueprints)
 format                 # prettier
+scan                   # gitleaks over the working tree + git history
 ```
 
-`devenv.nix` defines the shell (Node 22, TypeScript, npm), `flake.nix` just
-wires that shell up via `nix develop`/direnv so it's reproducible without
-requiring devenv to be installed globally either. `.envrc` also loads a
-local `.env` (via `dotenv_if_exists`) if you create one from
-[`.env.example`](.env.example) - useful for pointing ad-hoc test scripts at
-a real Home Assistant instance during development.
+(Outside the devenv shell - e.g. under plain `nix develop` - use the
+equivalent `npm run build`/`npm run watch`/`npm run lint`/`npm run format`
+and `gitleaks detect --source . -v --redact` directly; `devenv.nix`'s
+scripts are just short aliases for these.)
+
+`devenv.nix` defines the devenv/direnv shell (Node 22, TypeScript, npm,
+gitleaks). `flake.nix` provides a second, self-contained shell via
+`nix develop` with the same tools, for anyone who wants pure Nix without
+installing devenv globally. `.envrc` also loads a local `.env` (via
+`dotenv_if_exists`) if you create one from [`.env.example`](.env.example) -
+useful for pointing ad-hoc test scripts at a real Home Assistant instance
+during development.
+
+CI (`.github/workflows/ci.yml`, runs on this repo's [Gitea
+Actions](https://git.kjan.de/jank/hassio-irrigation-card/actions)) installs
+devenv via Nix and runs `typecheck`, `build`, `lint`, and the `gitleaks`
+scan on every push/PR, then uploads the built card as a job artifact. Note
+it pins `actions/upload-artifact` to `v3`: Gitea/Forgejo Actions runners
+don't yet support the newer artifact API that `v4`+ requires.
 
 **This repository is public - never commit real credentials.** `.env` and
-`.env.*` (besides `.env.example`) are gitignored. If you ever paste a
-Home Assistant long-lived access token somewhere it could leak (chat, a
-public gist, a commit), rotate it immediately from your profile's Security
-tab.
+`.env.*` (besides `.env.example`) are gitignored, and both CI and the
+local `scan` script run gitleaks against the working tree and full git
+history. If you ever paste a Home Assistant long-lived access token
+somewhere it could leak (chat, a public gist, a commit), rotate it
+immediately from your profile's Security tab.
 
 ## License
 

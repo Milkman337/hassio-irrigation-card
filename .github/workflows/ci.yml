@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # gitleaks needs real history to scan, not a 1-commit shallow clone.
+          fetch-depth: 0
 
       - uses: cachix/install-nix-action@v27
         with:
@@ -27,8 +30,16 @@ jobs:
         run: |
           devenv shell -- bash -lc "npm ci && npm run typecheck && npm run build && npm run lint"
 
+      - name: Secret scan (gitleaks)
+        run: |
+          devenv shell -- scan
+
+      # NOTE: pinned to v3 - Gitea/Forgejo Actions runners don't support the
+      # newer artifact API used by actions/upload-artifact v4+/download-artifact
+      # v4+ (they error with GHESNotSupportedError). v3 uses the older,
+      # widely-compatible API.
       - name: Upload built card
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: hassio-irrigation-card
           path: dist/hassio-irrigation-card.js

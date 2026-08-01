@@ -21,6 +21,7 @@
             nodejs_22
             jq
             yamllint
+            gitleaks
           ];
 
           shellHook = ''
@@ -30,6 +31,7 @@
             echo "  npm run watch                  - rebuild on file changes"
             echo "  npm run lint && yamllint blueprints"
             echo "  npm run format"
+            echo "  gitleaks detect --source . -v --redact"
             echo ""
             echo "Tip: 'direnv allow' uses devenv.nix instead and adds the 'build'/'watch'/'lint'/'format' scripts."
             echo ""
