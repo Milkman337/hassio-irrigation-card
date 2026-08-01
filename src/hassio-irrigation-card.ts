@@ -90,7 +90,10 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
       ...config,
       zones: config.zones ?? [],
     };
-    this._programCollapsed = !!this._config.compact;
+    // `start_collapsed` left unset keeps each panel's own historical default
+    // (Program Settings open, Diagnostics collapsed) rather than forcing both.
+    this._programCollapsed = config.start_collapsed ?? false;
+    this._diagnosticsCollapsed = config.start_collapsed ?? true;
   }
 
   public getCardSize(): number {

@@ -131,7 +131,8 @@ and every zone it can find.
 ```yaml
 type: custom:hassio-irrigation-card
 title: Garden Irrigation # optional, default "Irrigation"
-compact: false # optional, hides duration steppers & collapses panels by default
+compact: false # optional, hides the per-zone duration +/- steppers
+start_collapsed: false # optional, Program Settings & Diagnostics start collapsed
 show_diagnostics: true # optional, shows/hides the Diagnostics panel entirely
 show_multiplier_preview: true # optional, shows/hides the "estimated total runtime" line
 

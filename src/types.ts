@@ -37,7 +37,10 @@ export interface IrrigationCardConfig extends LovelaceCardConfig {
 
   show_diagnostics?: boolean;
   show_multiplier_preview?: boolean;
+  /** Hides the per-zone duration +/- steppers to save space. */
   compact?: boolean;
+  /** Start the Program Settings and Diagnostics panels collapsed. */
+  start_collapsed?: boolean;
 }
 
 export interface ZoneRuntimeState {

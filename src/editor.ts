@@ -109,10 +109,17 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
           .value=${this._config.title ?? ""}
           @input=${(e: Event) => this._set("title", (e.target as HTMLInputElement).value)}
         ></ha-textfield>
-        <ha-formfield label="Compact mode">
+        <ha-formfield label="Compact mode (hide per-zone duration steppers)">
           <ha-switch
             .checked=${!!this._config.compact}
             @change=${(e: Event) => this._set("compact", (e.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </ha-formfield>
+        <ha-formfield label="Start Program Settings / Diagnostics collapsed">
+          <ha-switch
+            .checked=${!!this._config.start_collapsed}
+            @change=${(e: Event) =>
+              this._set("start_collapsed", (e.target as HTMLInputElement).checked)}
           ></ha-switch>
         </ha-formfield>
         <ha-formfield label="Show diagnostics panel">
