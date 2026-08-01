@@ -1,0 +1,73 @@
+blueprint:
+  name: Irrigation Watchdog / Max Runtime Failsafe
+  description: >
+    Independent safety net for sprinkler/irrigation valves: if any watched
+    switch stays "on" for longer than a configured maximum runtime - for
+    ANY reason (a stuck relay, a scheduler bug, someone forgetting to turn
+    it off manually, Home Assistant restarting mid-cycle) - this
+    automation force-closes every watched valve and sends a critical
+    notification.
+
+
+    Runs completely independently from the Advanced Irrigation Scheduler
+    blueprint, so it still protects you even if that automation is
+    disabled, mis-configured, or Home Assistant restarted while it was
+    running.
+  domain: automation
+  author: hassio-irrigation-card
+  input:
+    watched_switches:
+      name: Valve / controller switches to watch
+      description: Every zone switch (and, if you like, the main controller switch).
+      selector:
+        entity:
+          domain: switch
+          multiple: true
+    max_runtime:
+      name: Maximum allowed runtime
+      description: How long a switch may stay "on" before this is considered stuck.
+      default:
+        hours: 2
+        minutes: 0
+        seconds: 0
+      selector:
+        duration: {}
+    notify_targets:
+      name: Notify targets (optional)
+      default: []
+      selector:
+        entity:
+          domain: notify
+          multiple: true
+
+mode: parallel
+max_exceeded: silent
+
+triggers:
+  - trigger: state
+    entity_id: !input watched_switches
+    to: "on"
+    for: !input max_runtime
+
+variables:
+  notify_targets: !input notify_targets
+  watched_switches: !input watched_switches
+  culprit: "{{ trigger.entity_id }}"
+
+actions:
+  - action: switch.turn_off
+    target:
+      entity_id: !input watched_switches
+    continue_on_error: true
+  - if:
+      - "{{ notify_targets | count > 0 }}"
+    then:
+      - action: notify.send_message
+        target:
+          entity_id: "{{ notify_targets }}"
+        data:
+          title: "🚨 Irrigation watchdog triggered"
+          message: >
+            {{ culprit }} was on for longer than the configured maximum
+            runtime. All watched valves ({{ watched_switches | join(', ') }})
+            have been force-closed - please check the controller.

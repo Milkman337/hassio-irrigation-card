@@ -1,0 +1,503 @@
+blueprint:
+  name: Advanced Irrigation Scheduler
+  description: >
+    Feature-rich sprinkler/irrigation scheduler built for ESPHome-based
+    multi-zone controllers (e.g. the ESPHome `sprinkler:` component), but
+    works with any setup exposing a switch per zone.
+
+
+    Features: fixed daily start times or sun-relative scheduling, per-zone
+    run durations with a global seasonal multiplier, per-zone enable
+    switches, per-zone soil-moisture skip, whole-run rain/freeze/manual
+    skip conditions, a controller-online pre-flight check, start/skip/finish
+    notifications, and a run-time safety ceiling. Can either let the
+    controller run its own native auto-advance program, or have Home
+    Assistant orchestrate every zone individually (required for per-zone
+    moisture skipping).
+
+
+    Pair this with the **Irrigation Watchdog / Max Runtime Failsafe**
+    blueprint for a second, independent safety net against a valve getting
+    stuck open.
+  domain: automation
+  author: hassio-irrigation-card
+  input:
+    general:
+      name: General
+      icon: mdi:sprinkler-variant
+      input:
+        sequencing_mode:
+          name: Sequencing mode
+          description: >
+            "Native" lets the controller's own auto-advance program run the
+            whole cycle (simplest, uses the settings already stored on the
+            device). "Orchestrated" has Home Assistant turn each zone on/off
+            individually - slower to set up but required for per-zone
+            soil-moisture skipping and works even without a controller
+            switch that runs the whole program.
+          default: orchestrated
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: Native (controller auto-advance)
+                  value: device
+                - label: Orchestrated (Home Assistant runs each zone)
+                  value: orchestrated
+        controller_switch:
+          name: Main controller switch
+          description: >
+            Required for "Native" mode (the switch that starts/stops the
+            whole program). Optional in "Orchestrated" mode - if set, it is
+            still turned on/off to reflect that a run is in progress.
+          default: []
+          selector:
+            entity:
+              domain: switch
+              multiple: true
+        controller_tracker:
+          name: Controller device tracker (optional)
+          description: >
+            If set, the run is skipped and a notification sent when the
+            controller is offline instead of silently doing nothing.
+          default: ""
+          selector:
+            entity:
+              domain: device_tracker
+
+    schedule:
+      name: Schedule
+      icon: mdi:clock-outline
+      input:
+        schedule_mode:
+          name: Schedule mode
+          default: fixed_times
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: Fixed times of day
+                  value: fixed_times
+                - label: Relative to sunrise/sunset
+                  value: sun
+        start_times:
+          name: Start times
+          description: One or more times of day to start watering (fixed-times mode).
+          default: ["06:00:00"]
+          selector:
+            time:
+              multiple: true
+        sun_event:
+          name: Sun event (sun mode)
+          default: sunrise
+          selector:
+            select:
+              options:
+                - label: Sunrise
+                  value: sunrise
+                - label: Sunset
+                  value: sunset
+        sun_offset:
+          name: Offset from sun event (sun mode)
+          description: Negative values run before the event, positive after.
+          default:
+            hours: 0
+            minutes: -30
+            seconds: 0
+          selector:
+            duration: {}
+
+    zones:
+      name: Zones
+      icon: mdi:valve
+      input:
+        zone_switches:
+          name: Zone valve switches
+          description: The switches that open/close each zone's valve, in order.
+          selector:
+            entity:
+              domain: switch
+              multiple: true
+        zone_enable_switches:
+          name: Zone enable switches (optional)
+          description: >
+            Optional, same order as the zone switches above. If a zone's
+            enable switch is off, that zone is skipped.
+          default: []
+          selector:
+            entity:
+              domain: switch
+              multiple: true
+        zone_durations:
+          name: Zone run-duration entities (optional)
+          description: >
+            Optional `number` entities holding each zone's run time in
+            seconds, same order as the zone switches. Any zone without a
+            matching entry uses "Default zone duration" below.
+          default: []
+          selector:
+            entity:
+              domain: number
+              multiple: true
+        default_duration:
+          name: Default zone duration
+          description: Used for zones without a duration entity above.
+          default: 600
+          selector:
+            number:
+              min: 10
+              max: 7200
+              unit_of_measurement: s
+              mode: box
+        seasonal_multiplier_entity:
+          name: Seasonal / global duration multiplier (optional)
+          description: >
+            Optional `number`/`input_number` entity (e.g. the controller's
+            own multiplier, or your own helper) that scales every zone's
+            duration. 1.0 = no change.
+          default: []
+          selector:
+            entity:
+              domain:
+                - number
+                - input_number
+              multiple: true
+        repeat_cycles:
+          name: Repeat cycles
+          description: How many extra times to repeat the whole zone sequence.
+          default: 0
+          selector:
+            number:
+              min: 0
+              max: 10
+              mode: box
+        zone_gap_seconds:
+          name: Gap between zones
+          description: Pause between closing one valve and opening the next (orchestrated mode).
+          default: 3
+          selector:
+            number:
+              min: 0
+              max: 120
+              unit_of_measurement: s
+              mode: box
+
+    moisture:
+      name: Per-zone soil moisture skip (orchestrated mode only)
+      icon: mdi:water-percent
+      collapsed: true
+      input:
+        zone_moisture_sensors:
+          name: Zone soil-moisture sensors (optional)
+          description: Optional, same order as the zone switches.
+          default: []
+          selector:
+            entity:
+              domain: sensor
+              device_class: moisture
+              multiple: true
+        zone_moisture_threshold:
+          name: Skip zone if moisture is at/above
+          default: 60
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+              mode: slider
+
+    skip_conditions:
+      name: Whole-run skip conditions
+      icon: mdi:weather-pouring
+      collapsed: true
+      input:
+        rain_sensor:
+          name: Rain sensor (optional)
+          description: Binary sensor - "on" means it's raining, skip the run.
+          default: ""
+          selector:
+            entity:
+              domain: binary_sensor
+        weather_entity:
+          name: Weather entity (optional)
+          description: Skip if current condition is rainy/snowy/stormy.
+          default: ""
+          selector:
+            entity:
+              domain: weather
+        temperature_sensor:
+          name: Temperature sensor for freeze protection (optional)
+          default: ""
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+        freeze_protection_temp:
+          name: Skip if temperature is at/below
+          default: 2
+          selector:
+            number:
+              min: -20
+              max: 20
+              unit_of_measurement: "°C"
+              mode: box
+        rain_delay_boolean:
+          name: Manual rain-delay helper (optional)
+          description: An input_boolean you can flip from a dashboard to skip the next run(s).
+          default: ""
+          selector:
+            entity:
+              domain: input_boolean
+        vacation_mode_boolean:
+          name: Vacation / pause helper (optional)
+          description: An input_boolean that disables this automation entirely while on.
+          default: ""
+          selector:
+            entity:
+              domain: input_boolean
+
+    notifications:
+      name: Notifications
+      icon: mdi:bell-outline
+      collapsed: true
+      input:
+        notify_targets:
+          name: Notify targets (optional)
+          description: One or more notify entities (e.g. mobile app notify entities).
+          default: []
+          selector:
+            entity:
+              domain: notify
+              multiple: true
+        notify_on_start:
+          name: Notify when watering starts
+          default: true
+          selector:
+            boolean: {}
+        notify_on_skip:
+          name: Notify when a run is skipped
+          default: true
+          selector:
+            boolean: {}
+        notify_on_finish:
+          name: Notify when watering finishes
+          default: false
+          selector:
+            boolean: {}
+
+    safety:
+      name: Safety
+      icon: mdi:shield-alert-outline
+      collapsed: true
+      input:
+        safety_margin_pct:
+          name: Timeout safety margin
+          description: >
+            Extra time (percent) added on top of the calculated program
+            length before Home Assistant force-closes every valve as a
+            failsafe, in case a zone or the controller doesn't report back.
+          default: 25
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+              mode: box
+
+mode: single
+max_exceeded: silent
+
+variables:
+  sequencing_mode: !input sequencing_mode
+  controller_switch: !input controller_switch
+  zone_switches: !input zone_switches
+  zone_enable_switches: !input zone_enable_switches
+  zone_durations: !input zone_durations
+  default_duration: !input default_duration
+  seasonal_multiplier_entity: !input seasonal_multiplier_entity
+  repeat_cycles: !input repeat_cycles
+  zone_gap_seconds: !input zone_gap_seconds
+  zone_moisture_sensors: !input zone_moisture_sensors
+  zone_moisture_threshold: !input zone_moisture_threshold
+  notify_targets: !input notify_targets
+  notify_on_start: !input notify_on_start
+  notify_on_skip: !input notify_on_skip
+  notify_on_finish: !input notify_on_finish
+  safety_margin_pct: !input safety_margin_pct
+  run_start: "{{ now() }}"
+  multiplier: >
+    {{ (states(seasonal_multiplier_entity[0]) | float(1)) if seasonal_multiplier_entity else 1 }}
+  planned_total_seconds: >
+    {% set ns = namespace(total=0) %}
+    {% for sw in zone_switches %}
+      {% set idx = loop.index0 %}
+      {% set enable_sw = zone_enable_switches[idx] if idx < zone_enable_switches | count else None %}
+      {% if not enable_sw or states(enable_sw) == 'on' %}
+        {% set dur = (zone_durations[idx] if idx < zone_durations | count else None) %}
+        {% set seconds = (states(dur) | float(default_duration)) if dur else default_duration %}
+        {% set ns.total = ns.total + (seconds * multiplier) %}
+      {% endif %}
+    {% endfor %}
+    {{ (ns.total * (repeat_cycles + 1)) | round(0) }}
+  timeout_seconds: "{{ (planned_total_seconds | float(60) * (1 + (safety_margin_pct | float(0)) / 100)) | round(0) }}"
+
+triggers:
+  - trigger: time
+    at: !input start_times
+    id: fixed_time
+  - trigger: sun
+    event: !input sun_event
+    offset: !input sun_offset
+    id: sun_event
+
+actions:
+  - variables:
+      schedule_mode: !input schedule_mode
+  # Only proceed if the trigger that fired matches the configured schedule mode.
+  - condition: template
+    value_template: >
+      {{ (schedule_mode == 'fixed_times' and trigger.id == 'fixed_time') or
+         (schedule_mode == 'sun' and trigger.id == 'sun_event') }}
+
+  # --- Pre-flight skip checks -------------------------------------------------
+  - variables:
+      vacation_mode_boolean: !input vacation_mode_boolean
+      rain_delay_boolean: !input rain_delay_boolean
+      rain_sensor: !input rain_sensor
+      weather_entity: !input weather_entity
+      temperature_sensor: !input temperature_sensor
+      freeze_protection_temp: !input freeze_protection_temp
+      controller_tracker: !input controller_tracker
+      skip_reason: >
+        {% if vacation_mode_boolean and is_state(vacation_mode_boolean, 'on') %}
+          Vacation mode is on
+        {% elif rain_delay_boolean and is_state(rain_delay_boolean, 'on') %}
+          Manual rain delay is active
+        {% elif rain_sensor and is_state(rain_sensor, 'on') %}
+          Rain sensor is wet
+        {% elif weather_entity and states(weather_entity) in ['rainy','pouring','lightning','lightning-rainy','snowy','snowy-rainy','hail'] %}
+          Weather is {{ states(weather_entity) }}
+        {% elif temperature_sensor and (states(temperature_sensor) | float(99) <= (freeze_protection_temp | float(0))) %}
+          Freeze protection ({{ states(temperature_sensor) }}° at/below {{ freeze_protection_temp }}°)
+        {% elif controller_tracker and not is_state(controller_tracker, 'home') %}
+          Controller appears offline
+        {% elif zone_switches | count == 0 %}
+          No zones configured
+        {% else %}
+          {{ '' }}
+        {% endif %}
+  - if:
+      - condition: template
+        value_template: "{{ skip_reason | trim != '' }}"
+    then:
+      - if:
+          - "{{ notify_on_skip and notify_targets | count > 0 }}"
+        then:
+          - action: notify.send_message
+            target:
+              entity_id: "{{ notify_targets }}"
+            data:
+              title: "🌧️ Irrigation skipped"
+              message: "{{ skip_reason | trim }}"
+      - stop: "Skip condition met: {{ skip_reason | trim }}"
+
+  # --- Start notification ------------------------------------------------------
+  - if:
+      - "{{ notify_on_start and notify_targets | count > 0 }}"
+    then:
+      - action: notify.send_message
+        target:
+          entity_id: "{{ notify_targets }}"
+        data:
+          title: "💧 Irrigation starting"
+          message: >
+            Starting {{ zone_switches | count }} zone(s), estimated
+            {{ (planned_total_seconds / 60) | round(1) }} min total.
+
+  # --- Run the program, mode-dependent -----------------------------------------
+  - choose:
+      - conditions: "{{ sequencing_mode == 'device' }}"
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ controller_switch | count > 0 }}"
+            then:
+              - action: switch.turn_on
+                target:
+                  entity_id: "{{ controller_switch }}"
+              - wait_template: "{{ controller_switch | count == 0 or is_state(controller_switch[0], 'off') }}"
+                timeout:
+                  seconds: "{{ timeout_seconds }}"
+                continue_on_timeout: true
+      - conditions: "{{ sequencing_mode == 'orchestrated' }}"
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ controller_switch | count > 0 }}"
+            then:
+              - action: switch.turn_on
+                target:
+                  entity_id: "{{ controller_switch }}"
+          - repeat:
+              count: "{{ repeat_cycles + 1 }}"
+              sequence:
+                - repeat:
+                    for_each: "{{ range(0, zone_switches | count) | list }}"
+                    sequence:
+                      - variables:
+                          idx: "{{ repeat.item }}"
+                          zone_switch: "{{ zone_switches[idx] }}"
+                          zone_enable: >
+                            {{ zone_enable_switches[idx] if idx < zone_enable_switches | count else None }}
+                          zone_duration_entity: >
+                            {{ zone_durations[idx] if idx < zone_durations | count else None }}
+                          zone_seconds: >
+                            {{ ((states(zone_duration_entity) | float(default_duration)) if zone_duration_entity else default_duration) * multiplier }}
+                          zone_moisture: >
+                            {{ zone_moisture_sensors[idx] if idx < zone_moisture_sensors | count else None }}
+                      - if:
+                          - condition: template
+                            value_template: >
+                              {{ (zone_enable and states(zone_enable) == 'off') or
+                                 (zone_moisture and (states(zone_moisture) | float(0)) >= zone_moisture_threshold) }}
+                        then:
+                          - if:
+                              - "{{ notify_on_skip and notify_targets | count > 0 }}"
+                            then:
+                              - action: notify.send_message
+                                target:
+                                  entity_id: "{{ notify_targets }}"
+                                data:
+                                  title: "⏭️ Zone skipped"
+                                  message: >
+                                    {{ zone_switch }} skipped
+                                    ({{ 'disabled' if zone_enable and states(zone_enable) == 'off' else 'soil already moist' }}).
+                        else:
+                          - action: switch.turn_on
+                            target:
+                              entity_id: "{{ zone_switch }}"
+                          - delay:
+                              seconds: "{{ zone_seconds }}"
+                          - action: switch.turn_off
+                            target:
+                              entity_id: "{{ zone_switch }}"
+                          - delay:
+                              seconds: !input zone_gap_seconds
+
+  # --- Unconditional cleanup / failsafe: never leave anything open -------------
+  - action: switch.turn_off
+    target:
+      entity_id: "{{ (controller_switch + zone_switches) | unique | list }}"
+    continue_on_error: true
+
+  # --- Completion notification ---------------------------------------------------
+  - if:
+      - "{{ notify_on_finish and notify_targets | count > 0 }}"
+    then:
+      - action: notify.send_message
+        target:
+          entity_id: "{{ notify_targets }}"
+        data:
+          title: "✅ Irrigation finished"
+          message: >
+            Ran for {{ (((now() - run_start).total_seconds()) / 60) | round(1) }} min.

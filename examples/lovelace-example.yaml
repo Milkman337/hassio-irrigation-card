@@ -1,0 +1,39 @@
+# Example Lovelace configuration for hassio-irrigation-card.
+#
+# Replace every entity_id below with your own (Settings -> Devices & Services
+# -> your ESPHome sprinkler device -> entities), or just add the card through
+# the UI and use the built-in "Detect" button in the visual editor.
+
+type: custom:hassio-irrigation-card
+title: Garden Irrigation
+controller_switch: switch.garden_controller_sprinkler
+auto_advance_switch: switch.garden_controller_auto_advance
+reverse_switch: switch.garden_controller_reverse
+multiplier_number: number.garden_controller_multiplier
+repeat_number: number.garden_controller_repeat
+internet_switch: switch.garden_controller_internet_access
+device_tracker: device_tracker.garden_controller
+show_diagnostics: true
+zones:
+  - name: Front Lawn
+    icon: mdi:grass
+    switch: switch.garden_controller_zone_1
+    enable_switch: switch.garden_controller_enable_zone_1
+    duration_number: number.garden_controller_zone_1_run_duration
+  - name: Back Lawn
+    icon: mdi:grass
+    switch: switch.garden_controller_zone_2
+    enable_switch: switch.garden_controller_enable_zone_2
+    duration_number: number.garden_controller_zone_2_run_duration
+  - name: Flower Beds
+    icon: mdi:flower
+    switch: switch.garden_controller_zone_3
+    enable_switch: switch.garden_controller_enable_zone_3
+    duration_number: number.garden_controller_zone_3_run_duration
+inputs:
+  - entity: binary_sensor.garden_controller_input_1
+    name: Rain Sensor
+    icon: mdi:weather-rainy
+  - entity: binary_sensor.garden_controller_input_2
+    name: Flow Alarm
+    icon: mdi:water-alert

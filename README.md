@@ -1,0 +1,217 @@
+# hassio-irrigation-card
+
+![CI](../../actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+
+A polished [Home Assistant](https://www.home-assistant.io/) Lovelace card and
+a matching advanced automation blueprint for multi-zone
+[ESPHome `sprinkler:`](https://esphome.io/components/sprinkler.html)-based
+irrigation controllers - the ESP32 boards that expose a main run switch,
+auto-advance/reverse switches, a duration multiplier + repeat count, and one
+switch/enable-switch/run-duration trio per zone.
+
+The card is theme-native (uses your Home Assistant theme's colors, light or
+dark) and responsive on both desktop and mobile. The blueprint adds
+scheduling, weather/freeze/soil-moisture skip logic, notifications and a
+run-time safety ceiling on top of whatever's already on the device.
+
+## Contents
+
+- [`src/`](src) - TypeScript/Lit source for the Lovelace card
+- [`blueprints/automation/advanced_irrigation_scheduler.yaml`](blueprints/automation/advanced_irrigation_scheduler.yaml) - the scheduler
+- [`blueprints/automation/irrigation_watchdog.yaml`](blueprints/automation/irrigation_watchdog.yaml) - independent stuck-valve failsafe
+- [`examples/lovelace-example.yaml`](examples/lovelace-example.yaml) - a full example card config
+
+## Card features
+
+- Header with program status ("Idle" / "Running: Zone X") and an optional
+  online/offline pill sourced from a `device_tracker` entity.
+- Big Start/Stop button for the main controller switch, plus a dedicated
+  emergency **stop-all** button that force-closes the controller and every
+  zone switch in one tap.
+- One tile per zone: tap to run/stop that zone manually, live countdown +
+  progress bar while running, an inline enable/disable toggle, and +/-30s
+  duration steppers.
+- Collapsible **Program Settings** panel: auto-advance, reverse-order,
+  duration multiplier slider, repeat-cycle stepper, and a live "estimated
+  total runtime" readout.
+- Collapsible **Diagnostics** panel: arbitrary binary-sensor input chips
+  (rain sensor, flow alarm, etc.), an internet-access switch, and
+  controller connectivity/IP.
+- Full visual (no-YAML) editor, including an "auto-detect" button that scans
+  your entities by a common ID prefix and fills in the whole card for you.
+- Tapping any entity name/chip opens Home Assistant's native "more info"
+  dialog for that entity.
+
+## Required Home Assistant entities ("buttons")
+
+None of these are bundled with the card - they come from your ESPHome
+device (or whatever integration exposes equivalent entities). Everything is
+optional in the card config _except_ the zone switches; leaving the rest
+unset just hides that part of the UI.
+
+| Card config key           | Entity domain    | What it is                                                                              | ESPHome `sprinkler:` source                                          |
+| ------------------------- | ---------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `controller_switch`       | `switch`         | Starts/stops the whole multi-zone program                                               | the `sprinkler:` component's main switch                             |
+| `auto_advance_switch`     | `switch`         | Auto-advance to the next zone                                                           | `switch: - platform: template` under `sprinkler.auto_advance_switch` |
+| `reverse_switch`          | `switch`         | Run the zone sequence back to front                                                     | `sprinkler.reverse_switch`                                           |
+| `multiplier_number`       | `number`         | Scales every zone's run time (e.g. `x1.0`)                                              | `sprinkler.multiplier`                                               |
+| `repeat_number`           | `number`         | How many extra times to repeat the program                                              | `sprinkler.repeat`                                                   |
+| `internet_switch`         | `switch`         | Device-level network/API access toggle (if your board exposes one)                      | board-specific                                                       |
+| `device_tracker`          | `device_tracker` | Online/offline + IP for the controller                                                  | automatic if the device uses the `wifi:`/`api:` components           |
+| `zones[].switch`          | `switch`         | Opens/closes that zone's valve                                                          | per-valve switch                                                     |
+| `zones[].enable_switch`   | `switch`         | Include/exclude the zone from the auto sequence                                         | per-valve `enable_switch`                                            |
+| `zones[].duration_number` | `number`         | That zone's run duration, in seconds                                                    | per-valve `run_duration_number`                                      |
+| `inputs[].entity`         | `binary_sensor`  | Any extra digital input you want surfaced (rain sensor, flow alarm, manual button, ...) | board-specific GPIO binary sensors                                   |
+
+If your entity IDs all share a common prefix (which is the ESPHome default,
+e.g. `switch.<device>_zone_1`, `number.<device>_zone_1_run_duration`, ...),
+open the card's visual editor, type that prefix into **Auto-detect from
+entity prefix**, and click **Detect** - it fills in the controller entities
+and every zone it can find.
+
+## Installation
+
+### HACS (custom repository)
+
+1. HACS -> the 3-dot menu -> **Custom repositories**.
+2. Add this repository's URL, category **Dashboard**.
+3. Install **Sprinkler Irrigation Card**, then add the resource if HACS
+   didn't do it automatically (Settings -> Dashboards -> Resources ->
+   `/hacsfiles/hassio-irrigation-card/hassio-irrigation-card.js`, type
+   _JavaScript Module_).
+
+### Manual
+
+1. Build the card (`npm run build`, or via the Nix dev shell - see
+   [Development](#development)) or grab `dist/hassio-irrigation-card.js`
+   from a release.
+2. Copy it to `<config>/www/hassio-irrigation-card.js`.
+3. Settings -> Dashboards -> Resources -> **Add resource**:
+   URL `/local/hassio-irrigation-card.js`, type _JavaScript Module_.
+4. Add a card with type `custom:hassio-irrigation-card` (use the visual
+   editor, or see [`examples/lovelace-example.yaml`](examples/lovelace-example.yaml)).
+
+## Card configuration reference
+
+```yaml
+type: custom:hassio-irrigation-card
+title: Garden Irrigation # optional, default "Irrigation"
+compact: false # optional, hides duration steppers & collapses panels by default
+show_diagnostics: true # optional, shows/hides the Diagnostics panel entirely
+show_multiplier_preview: true # optional, shows/hides the "estimated total runtime" line
+
+controller_switch: switch...
+auto_advance_switch: switch...
+reverse_switch: switch...
+multiplier_number: number...
+repeat_number: number...
+internet_switch: switch...
+device_tracker: device_tracker...
+
+zones: # required, at least one zone
+  - name: Front Lawn # optional, falls back to friendly_name / "Zone N"
+    icon: mdi:grass # optional
+    switch: switch... # required
+    enable_switch: switch... # optional
+    duration_number: number... # optional
+
+inputs: # optional
+  - entity: binary_sensor...
+    name: Rain Sensor # optional
+    icon: mdi:weather-rainy # optional
+```
+
+## Automation blueprints
+
+Import via Settings -> Automations & Scenes -> Blueprints -> **Import
+Blueprint**, and paste the raw file URL, or copy the YAML file into
+`<config>/blueprints/automation/hassio-irrigation-card/`.
+
+### Advanced Irrigation Scheduler
+
+`blueprints/automation/advanced_irrigation_scheduler.yaml`
+
+- **Schedule**: one or more fixed daily start times, or sunrise/sunset with
+  an offset.
+- **Sequencing mode**: `Native` lets the controller run its own
+  auto-advance program (uses whatever multiplier/repeat/enable state is
+  already on the device); `Orchestrated` has Home Assistant turn each zone
+  on/off itself, which is what enables per-zone soil-moisture skipping.
+- **Zones**: ordered lists of zone switches, optional per-zone enable
+  switches and duration entities (same order/index), a default duration
+  for zones without one, an optional seasonal/global multiplier entity, a
+  repeat-cycle count, and a gap between zones.
+- **Per-zone soil moisture skip** _(orchestrated mode)_: give it an ordered
+  list of moisture sensors and a threshold; any zone whose sensor is
+  already at/above that threshold gets skipped, individually.
+- **Whole-run skip conditions**: rain sensor, weather entity (skips on
+  rainy/snowy/stormy conditions), freeze-protection temperature sensor +
+  threshold, a manual rain-delay `input_boolean`, and a vacation/pause
+  `input_boolean`.
+- **Controller-offline check**: skip and notify instead of silently doing
+  nothing if the controller's `device_tracker` isn't `home`.
+- **Notifications**: start/skip/finish messages to any `notify.*` entity
+  target.
+- **Safety**: a percentage safety margin added on top of the calculated
+  program length before Home Assistant force-closes every valve, in case
+  something doesn't report back as expected. This runs _unconditionally_
+  as the last step of every invocation, native or orchestrated.
+
+### Irrigation Watchdog / Max Runtime Failsafe
+
+`blueprints/automation/irrigation_watchdog.yaml`
+
+A second, independent automation: if any watched switch stays `on` longer
+than a configured maximum runtime - for _any_ reason, including the
+scheduler automation being disabled, a stuck relay, someone forgetting to
+close a valve manually, or Home Assistant restarting mid-cycle - it force-
+closes every watched switch and sends a critical notification. Point it at
+every zone switch (and the main controller switch); it's independent of the
+scheduler blueprint on purpose, so create it as a _separate_ automation.
+
+### Suggested helpers
+
+Create these `input_boolean` helpers (Settings -> Devices & Services ->
+Helpers) if you want the corresponding skip conditions in the scheduler
+blueprint:
+
+- `input_boolean.irrigation_rain_delay` - flip on from a dashboard to skip
+  the next scheduled run(s).
+- `input_boolean.irrigation_vacation_mode` - flip on to pause the scheduler
+  entirely.
+
+## Development
+
+This repo ships a [Nix flake](flake.nix) plus [devenv](https://devenv.sh)
+config so the whole toolchain (Node.js, TypeScript, esbuild, eslint,
+prettier, yamllint) is reproducible - no globally installed Node needed.
+
+```sh
+# one-time
+direnv allow          # if you use direnv - picks up .envrc automatically
+# or, without direnv:
+nix develop            # drops you into the same shell
+
+build                  # bundle the card to dist/hassio-irrigation-card.js
+watch                  # rebuild on file changes
+lint                   # eslint + yamllint (incl. the blueprints)
+format                 # prettier
+```
+
+`devenv.nix` defines the shell (Node 22, TypeScript, npm), `flake.nix` just
+wires that shell up via `nix develop`/direnv so it's reproducible without
+requiring devenv to be installed globally either. `.envrc` also loads a
+local `.env` (via `dotenv_if_exists`) if you create one from
+[`.env.example`](.env.example) - useful for pointing ad-hoc test scripts at
+a real Home Assistant instance during development.
+
+**This repository is public - never commit real credentials.** `.env` and
+`.env.*` (besides `.env.example`) are gitignored. If you ever paste a
+Home Assistant long-lived access token somewhere it could leak (chat, a
+public gist, a commit), rotate it immediately from your profile's Security
+tab.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

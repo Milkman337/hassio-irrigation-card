@@ -1,0 +1,338 @@
+import { css } from "lit";
+
+export const cardStyles = css`
+  :host {
+    display: block;
+  }
+
+  ha-card {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 16px;
+    overflow: hidden;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .header-title h1 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin: 0;
+    color: var(--ha-card-header-color, var(--primary-text-color));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--secondary-background-color);
+    color: var(--secondary-text-color);
+    white-space: nowrap;
+  }
+
+  .status-pill.online {
+    background: rgba(var(--rgb-state-active, 76, 175, 80), 0.15);
+    color: var(--success-color, #4caf50);
+  }
+
+  .status-pill.offline {
+    background: rgba(var(--rgb-state-error, 244, 67, 54), 0.15);
+    color: var(--error-color, #f44336);
+  }
+
+  .status-pill.running {
+    background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.15);
+    color: var(--primary-color);
+  }
+
+  .master-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .master-button {
+    --mdc-theme-primary: var(--primary-color);
+    flex: 1 1 160px;
+  }
+
+  ha-icon-button.stop-all {
+    --mdc-icon-button-size: 44px;
+    color: var(--error-color, #f44336);
+    border: 1px solid var(--error-color, #f44336);
+    border-radius: 999px;
+  }
+
+  .zones-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .zone-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border-radius: var(--ha-card-border-radius, 12px);
+    background: var(--secondary-background-color);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition:
+      background 180ms ease,
+      border-color 180ms ease;
+    min-height: 108px;
+  }
+
+  .zone-tile:hover {
+    border-color: var(--divider-color);
+  }
+
+  .zone-tile.active {
+    background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
+    border-color: var(--primary-color);
+  }
+
+  .zone-tile.disabled {
+    opacity: 0.55;
+  }
+
+  .zone-tile.unavailable {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .zone-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .zone-icon {
+    color: var(--state-icon-color, var(--secondary-text-color));
+  }
+
+  .zone-tile.active .zone-icon {
+    color: var(--primary-color);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.12);
+      opacity: 0.75;
+    }
+  }
+
+  .zone-enable {
+    --mdc-theme-secondary: var(--primary-color);
+    transform: scale(0.8);
+    margin: -8px -8px 0 0;
+  }
+
+  .zone-name {
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--primary-text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .zone-state {
+    font-size: 0.78rem;
+    color: var(--secondary-text-color);
+  }
+
+  .zone-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--divider-color);
+    overflow: hidden;
+    margin-top: auto;
+  }
+
+  .zone-progress > div {
+    height: 100%;
+    background: var(--primary-color);
+    transition: width 1s linear;
+  }
+
+  .zone-duration-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 0.78rem;
+    color: var(--secondary-text-color);
+  }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .stepper ha-icon-button {
+    --mdc-icon-button-size: 24px;
+    --mdc-icon-size: 16px;
+  }
+
+  section.panel {
+    border-top: 1px solid var(--divider-color);
+    padding-top: 12px;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .panel-header h2 {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin: 0;
+    color: var(--primary-text-color);
+  }
+
+  .panel-header ha-icon {
+    color: var(--secondary-text-color);
+    transition: transform 180ms ease;
+  }
+
+  .panel-header.collapsed ha-icon {
+    transform: rotate(-90deg);
+  }
+
+  .panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 10px;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .setting-row .setting-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .setting-row .setting-label span.primary {
+    font-size: 0.9rem;
+    color: var(--primary-text-color);
+  }
+
+  .setting-row .setting-label span.secondary {
+    font-size: 0.75rem;
+    color: var(--secondary-text-color);
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .slider-row input[type="range"] {
+    flex: 1;
+    accent-color: var(--primary-color);
+  }
+
+  .slider-value {
+    min-width: 42px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.85rem;
+    color: var(--primary-text-color);
+  }
+
+  .estimate {
+    font-size: 0.8rem;
+    color: var(--secondary-text-color);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--secondary-background-color);
+    font-size: 0.78rem;
+    color: var(--secondary-text-color);
+  }
+
+  .chip.on {
+    color: var(--primary-color);
+    background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
+  }
+
+  .chip ha-icon {
+    --mdc-icon-size: 16px;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px 8px;
+    color: var(--secondary-text-color);
+    text-align: center;
+  }
+
+  @media (max-width: 420px) {
+    ha-card {
+      padding: 12px;
+    }
+    .zones-grid {
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+  }
+`;

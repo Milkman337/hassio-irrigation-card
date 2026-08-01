@@ -1,0 +1,31 @@
+# Secrets - never commit real HA URLs/tokens
+.env
+.env.*
+!.env.example
+secrets.yaml
+
+# Node
+node_modules/
+npm-debug.log*
+dist/
+*.tsbuildinfo
+
+# Nix / devenv
+.devenv/
+.devenv.flake.nix
+devenv.local.nix
+.direnv/
+.pre-commit-config.yaml
+
+# direnv
+.envrc.local
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Misc
+*.log
+.cache/
