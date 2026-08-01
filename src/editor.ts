@@ -208,6 +208,12 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
         ${this._zoneEntityPicker(index, "switch", "Zone switch", ["switch"])}
         ${this._zoneEntityPicker(index, "enable_switch", "Enable switch (optional)", ["switch"])}
         ${this._zoneEntityPicker(index, "duration_number", "Run duration number (optional)", ["number"])}
+        ${this._zoneEntityPicker(
+          index,
+          "smart_irrigation_sensor",
+          "Smart Irrigation duration sensor (optional)",
+          ["sensor"]
+        )}
       </div>
     `;
   }

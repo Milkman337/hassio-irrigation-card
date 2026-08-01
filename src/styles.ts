@@ -314,6 +314,38 @@ export const cardStyles = css`
     --mdc-icon-size: 16px;
   }
 
+  .zone-ai-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--primary-color);
+  }
+
+  .zone-ai-row ha-icon {
+    --mdc-icon-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .zone-ai-row span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .zone-ai-row ha-icon-button {
+    --mdc-icon-button-size: 22px;
+    --mdc-icon-size: 15px;
+    flex-shrink: 0;
+  }
+
+  ha-icon-button.recalculate {
+    --mdc-icon-button-size: 32px;
+    --mdc-icon-size: 18px;
+    color: var(--secondary-text-color);
+  }
+
   section.panel {
     border-top: 1px solid var(--divider-color);
     padding-top: 12px;

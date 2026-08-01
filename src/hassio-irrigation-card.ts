@@ -137,6 +137,13 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     return this.hass.states[entity]?.state !== "docked";
   }
 
+  private get _smartIrrigationAvailable(): boolean {
+    return (
+      !!this.hass.services?.smart_irrigation?.calculate_all_zones &&
+      this._config.zones.some((z) => !!z.smart_irrigation_sensor)
+    );
+  }
+
   private _zoneStates(): ZoneRuntimeState[] {
     if (!this.hass || !this._config) return [];
     return this._config.zones.map((z, i) =>
@@ -187,6 +194,17 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                 ? html`<span class="status-pill ${trackerOnline ? "online" : "offline"}"
                     >${trackerOnline ? "Online" : "Offline"}</span
                   >`
+                : nothing
+            }
+            ${
+              this._smartIrrigationAvailable
+                ? html`<ha-icon-button
+                    class="recalculate"
+                    title="Recalculate Smart Irrigation durations"
+                    @click=${this._recalculateSmartIrrigation}
+                  >
+                    <ha-icon icon="mdi:weather-partly-rainy"></ha-icon>
+                  </ha-icon-button>`
                 : nothing
             }
           </div>
@@ -315,6 +333,14 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
             : nothing
         }
         ${
+          !zone.active &&
+          !this._config.compact &&
+          zone.config.smart_irrigation_sensor &&
+          zone.config.duration_number
+            ? this._renderSmartIrrigationRow(zone, locked)
+            : nothing
+        }
+        ${
           zone.active
             ? html`<div class="zone-progress"><div style="width:${zone.progressPct}%"></div></div>`
             : nothing
@@ -342,6 +368,30 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
             <ha-icon icon="mdi:plus"></ha-icon>
           </ha-icon-button>
         </div>
+      </div>
+    `;
+  }
+
+  private _renderSmartIrrigationRow(
+    zone: ZoneRuntimeState,
+    locked: boolean
+  ): TemplateResult | typeof nothing {
+    const recommended = numberState(this.hass, zone.config.smart_irrigation_sensor, -1);
+    if (recommended < 0 || Math.abs(recommended - zone.durationSeconds) < 5) return nothing;
+    return html`
+      <div class="zone-ai-row">
+        <ha-icon icon="mdi:weather-partly-rainy"></ha-icon>
+        <span>Suggested ${formatDuration(recommended)}</span>
+        <ha-icon-button
+          title="Apply suggested duration"
+          ?disabled=${locked}
+          @click=${(e: Event) => {
+            e.stopPropagation();
+            if (!locked) this._applySmartIrrigationDuration(zone);
+          }}
+        >
+          <ha-icon icon="mdi:check"></ha-icon>
+        </ha-icon-button>
       </div>
     `;
   }
@@ -584,6 +634,19 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
 
   private _setNumber(entityId: string, value: number): void {
     this.hass.callService("number", "set_value", { entity_id: entityId, value });
+  }
+
+  private _recalculateSmartIrrigation = (): void => {
+    this.hass.callService("smart_irrigation", "calculate_all_zones", {});
+  };
+
+  private _applySmartIrrigationDuration(zone: ZoneRuntimeState): void {
+    const sensor = zone.config.smart_irrigation_sensor;
+    const durationEntity = zone.config.duration_number;
+    if (!sensor || !durationEntity) return;
+    const seconds = numberState(this.hass, sensor, -1);
+    if (seconds < 0) return;
+    this._setNumber(durationEntity, seconds);
   }
 
   private _onMultiplierInput = (e: InputEvent): void => {

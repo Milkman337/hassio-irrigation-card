@@ -7,6 +7,12 @@ export interface ZoneConfig {
   enable_switch?: string;
   /** Optional number.* entity holding the zone's run duration in seconds */
   duration_number?: string;
+  /**
+   * Optional sensor.* entity from the Smart Irrigation integration
+   * (https://altmenorg.github.io/HAsmartirrigation/) - its state is the
+   * weather/evapotranspiration-calculated run duration in seconds.
+   */
+  smart_irrigation_sensor?: string;
   name?: string;
   icon?: string;
 }

@@ -1,0 +1,237 @@
+blueprint:
+  name: Smart Irrigation Runner
+  description: >
+    Runs your zones from durations calculated by the **Smart Irrigation**
+    integration (https://altmenorg.github.io/HAsmartirrigation/), which
+    works out how long each zone needs based on weather/evapotranspiration
+    data. Smart Irrigation only calculates - it deliberately doesn't touch
+    your valves - so this blueprint is the automation it expects you to
+    write: it listens for its `smart_irrigation_start_irrigation_all_zones`
+    event, runs each zone for exactly as long as its duration sensor says
+    (skipping zones at 0 seconds, per Smart Irrigation's own guidance), and
+    calls `smart_irrigation.reset_bucket` on each zone afterward so it
+    doesn't think the deficit is still outstanding next time.
+
+
+    There's deliberately no rain/freeze skip condition here - that's the
+    entire point of Smart Irrigation's ET calculation, duplicating it here
+    would just fight it. Don't also point the **Advanced Irrigation
+    Scheduler** blueprint at the same zones, or you'll water them twice.
+    Pair this with the **Irrigation Watchdog / Max Runtime Failsafe**
+    blueprint the same way as the other scheduler, for a stuck-valve
+    safety net.
+  domain: automation
+  author: hassio-irrigation-card
+  input:
+    zones:
+      name: Zones
+      icon: mdi:valve
+      input:
+        controller_switch:
+          name: Main controller switch (optional)
+          description: Turned on/off to reflect that a run is in progress, if set.
+          default: []
+          selector:
+            entity:
+              domain: switch
+              multiple: true
+        zone_switches:
+          name: Zone valve switches
+          description: The switches that open/close each zone's valve, in order.
+          selector:
+            entity:
+              domain: switch
+              multiple: true
+        duration_sensors:
+          name: Smart Irrigation duration sensors
+          description: >
+            The `sensor.smart_irrigation_<zone>` entity for each zone above,
+            same order/index - its state is the calculated run time in
+            seconds. `smart_irrigation.reset_bucket` is called on this same
+            entity after that zone runs.
+          selector:
+            entity:
+              domain: sensor
+              multiple: true
+        zone_gap_seconds:
+          name: Gap between zones
+          description: Pause between closing one valve and opening the next.
+          default: 3
+          selector:
+            number:
+              min: 0
+              max: 120
+              unit_of_measurement: s
+              mode: box
+
+    safety:
+      name: Safety
+      icon: mdi:shield-alert-outline
+      collapsed: true
+      input:
+        lawnmower_entity:
+          name: Robot lawnmower (optional)
+          description: Skip the run if this entity's state isn't "docked".
+          default: ""
+          selector:
+            entity:
+              domain: lawn_mower
+        vacation_mode_boolean:
+          name: Vacation / pause helper (optional)
+          description: An input_boolean that skips the run while on.
+          default: ""
+          selector:
+            entity:
+              domain: input_boolean
+
+    notifications:
+      name: Notifications
+      icon: mdi:bell-outline
+      collapsed: true
+      input:
+        notify_targets:
+          name: Notify targets (optional)
+          default: []
+          selector:
+            entity:
+              domain: notify
+              multiple: true
+        notify_on_start:
+          name: Notify when watering starts
+          default: true
+          selector:
+            boolean: {}
+        notify_on_skip:
+          name: Notify when a run/zone is skipped
+          default: true
+          selector:
+            boolean: {}
+        notify_on_finish:
+          name: Notify when watering finishes
+          default: false
+          selector:
+            boolean: {}
+
+mode: single
+max_exceeded: silent
+
+variables:
+  controller_switch: !input controller_switch
+  zone_switches: !input zone_switches
+  duration_sensors: !input duration_sensors
+  zone_gap_seconds: !input zone_gap_seconds
+  notify_targets: !input notify_targets
+  notify_on_start: !input notify_on_start
+  notify_on_skip: !input notify_on_skip
+  notify_on_finish: !input notify_on_finish
+  run_start: "{{ now() }}"
+
+triggers:
+  - trigger: event
+    event_type: smart_irrigation_start_irrigation_all_zones
+
+actions:
+  - variables:
+      lawnmower_entity: !input lawnmower_entity
+      vacation_mode_boolean: !input vacation_mode_boolean
+      skip_reason: >
+        {% if vacation_mode_boolean and is_state(vacation_mode_boolean, 'on') %}
+          Vacation mode is on
+        {% elif lawnmower_entity and states(lawnmower_entity) != 'docked' %}
+          Lawnmower isn't docked
+        {% elif zone_switches | count == 0 %}
+          No zones configured
+        {% else %}
+          {{ '' }}
+        {% endif %}
+  - if:
+      - condition: template
+        value_template: "{{ skip_reason | trim != '' }}"
+    then:
+      - if:
+          - "{{ notify_on_skip and notify_targets | count > 0 }}"
+        then:
+          - action: notify.send_message
+            target:
+              entity_id: "{{ notify_targets }}"
+            data:
+              title: "🌧️ Smart Irrigation run skipped"
+              message: "{{ skip_reason | trim }}"
+      - stop: "Skip condition met: {{ skip_reason | trim }}"
+
+  - if:
+      - "{{ notify_on_start and notify_targets | count > 0 }}"
+    then:
+      - action: notify.send_message
+        target:
+          entity_id: "{{ notify_targets }}"
+        data:
+          title: "💧 Smart Irrigation starting"
+          message: "Starting a Smart Irrigation-driven run of {{ zone_switches | count }} zone(s)."
+
+  - if:
+      - condition: template
+        value_template: "{{ controller_switch | count > 0 }}"
+    then:
+      - action: switch.turn_on
+        target:
+          entity_id: "{{ controller_switch }}"
+
+  - repeat:
+      for_each: "{{ range(0, zone_switches | count) | list }}"
+      sequence:
+        - variables:
+            idx: "{{ repeat.item }}"
+            zone_switch: "{{ zone_switches[idx] }}"
+            duration_sensor: >
+              {{ duration_sensors[idx] if idx < duration_sensors | count else None }}
+            zone_seconds: >
+              {{ (states(duration_sensor) | float(0)) if duration_sensor else 0 }}
+        - if:
+            - condition: template
+              value_template: "{{ zone_seconds <= 0 }}"
+          then:
+            - if:
+                - "{{ notify_on_skip and notify_targets | count > 0 }}"
+              then:
+                - action: notify.send_message
+                  target:
+                    entity_id: "{{ notify_targets }}"
+                  data:
+                    title: "⏭️ Zone skipped"
+                    message: "{{ zone_switch }} needs no watering right now (0s calculated)."
+          else:
+            - action: switch.turn_on
+              target:
+                entity_id: "{{ zone_switch }}"
+            - delay:
+                seconds: "{{ zone_seconds }}"
+            - action: switch.turn_off
+              target:
+                entity_id: "{{ zone_switch }}"
+            - if:
+                - condition: template
+                  value_template: "{{ duration_sensor is not none }}"
+              then:
+                - action: smart_irrigation.reset_bucket
+                  target:
+                    entity_id: "{{ duration_sensor }}"
+            - delay:
+                seconds: !input zone_gap_seconds
+
+  # Unconditional cleanup / failsafe: never leave anything open.
+  - action: switch.turn_off
+    target:
+      entity_id: "{{ (controller_switch + zone_switches) | unique | list }}"
+    continue_on_error: true
+
+  - if:
+      - "{{ notify_on_finish and notify_targets | count > 0 }}"
+    then:
+      - action: notify.send_message
+        target:
+          entity_id: "{{ notify_targets }}"
+        data:
+          title: "✅ Smart Irrigation finished"
+          message: >
+            Ran for {{ (((now() - run_start).total_seconds()) / 60) | round(1) }} min.

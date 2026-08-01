@@ -33,6 +33,7 @@ run-time safety ceiling on top of whatever's already on the device.
 - [`src/`](src) - TypeScript/Lit source for the Lovelace card
 - [`blueprints/automation/advanced_irrigation_scheduler.yaml`](blueprints/automation/advanced_irrigation_scheduler.yaml) - the scheduler
 - [`blueprints/automation/irrigation_watchdog.yaml`](blueprints/automation/irrigation_watchdog.yaml) - independent stuck-valve failsafe
+- [`blueprints/automation/smart_irrigation_runner.yaml`](blueprints/automation/smart_irrigation_runner.yaml) - runs zones from Smart Irrigation's calculated durations
 - [`examples/lovelace-example.yaml`](examples/lovelace-example.yaml) - a full example card config
 
 ## Card features
@@ -55,6 +56,10 @@ run-time safety ceiling on top of whatever's already on the device.
   your entities by a common ID prefix and fills in the whole card for you.
 - Tapping any entity name/chip opens Home Assistant's native "more info"
   dialog for that entity.
+- Optional lock-out while a robot lawnmower isn't docked, and optional
+  [Smart Irrigation](https://altmenorg.github.io/HAsmartirrigation/)
+  integration (per-zone suggested durations with one-tap apply, plus a
+  recalculate button) - see below for both.
 
 ## Required Home Assistant entities ("buttons")
 
@@ -63,20 +68,21 @@ device (or whatever integration exposes equivalent entities). Everything is
 optional in the card config _except_ the zone switches; leaving the rest
 unset just hides that part of the UI.
 
-| Card config key           | Entity domain    | What it is                                                                                  | ESPHome `sprinkler:` source                                |
-| ------------------------- | ---------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `controller_switch`       | `switch`         | Starts/stops the whole multi-zone program                                                   | the `sprinkler:` component's main switch                   |
-| `auto_advance_switch`     | `switch`         | Auto-advance to the next zone                                                               | `sprinkler:` `auto_advance_switch`                         |
-| `reverse_switch`          | `switch`         | Run the zone sequence back to front                                                         | `sprinkler:` `reverse_switch`                              |
-| `multiplier_number`       | `number`         | Scales every zone's run time (e.g. `x1.0`)                                                  | `sprinkler:` `multiplier_number`                           |
-| `repeat_number`           | `number`         | How many extra times to repeat the program                                                  | `sprinkler:` `repeat_number`                               |
-| `internet_switch`         | `switch`         | Device-level network/API access toggle (if your board exposes one)                          | board-specific                                             |
-| `device_tracker`          | `device_tracker` | Online/offline + IP for the controller                                                      | automatic if the device uses the `wifi:`/`api:` components |
-| `lawnmower_entity`        | `lawn_mower`     | Locks the whole card unless this entity is `docked` - see [below](#robot-lawnmower-lockout) | not part of the controller - your mower integration        |
-| `zones[].switch`          | `switch`         | Opens/closes that zone's valve                                                              | per-valve switch                                           |
-| `zones[].enable_switch`   | `switch`         | Include/exclude the zone from the auto sequence                                             | per-valve `enable_switch`                                  |
-| `zones[].duration_number` | `number`         | That zone's run duration, in seconds                                                        | per-valve `run_duration_number`                            |
-| `inputs[].entity`         | `binary_sensor`  | Any extra digital input you want surfaced (rain sensor, flow alarm, manual button, ...)     | board-specific GPIO binary sensors                         |
+| Card config key                   | Entity domain    | What it is                                                                                  | ESPHome `sprinkler:` source                                   |
+| --------------------------------- | ---------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `controller_switch`               | `switch`         | Starts/stops the whole multi-zone program                                                   | the `sprinkler:` component's main switch                      |
+| `auto_advance_switch`             | `switch`         | Auto-advance to the next zone                                                               | `sprinkler:` `auto_advance_switch`                            |
+| `reverse_switch`                  | `switch`         | Run the zone sequence back to front                                                         | `sprinkler:` `reverse_switch`                                 |
+| `multiplier_number`               | `number`         | Scales every zone's run time (e.g. `x1.0`)                                                  | `sprinkler:` `multiplier_number`                              |
+| `repeat_number`                   | `number`         | How many extra times to repeat the program                                                  | `sprinkler:` `repeat_number`                                  |
+| `internet_switch`                 | `switch`         | Device-level network/API access toggle (if your board exposes one)                          | board-specific                                                |
+| `device_tracker`                  | `device_tracker` | Online/offline + IP for the controller                                                      | automatic if the device uses the `wifi:`/`api:` components    |
+| `lawnmower_entity`                | `lawn_mower`     | Locks the whole card unless this entity is `docked` - see [below](#robot-lawnmower-lockout) | not part of the controller - your mower integration           |
+| `zones[].switch`                  | `switch`         | Opens/closes that zone's valve                                                              | per-valve switch                                              |
+| `zones[].enable_switch`           | `switch`         | Include/exclude the zone from the auto sequence                                             | per-valve `enable_switch`                                     |
+| `zones[].duration_number`         | `number`         | That zone's run duration, in seconds                                                        | per-valve `run_duration_number`                               |
+| `zones[].smart_irrigation_sensor` | `sensor`         | Suggested duration from Smart Irrigation - see [below](#smart-irrigation-integration)       | not part of the controller - the Smart Irrigation integration |
+| `inputs[].entity`                 | `binary_sensor`  | Any extra digital input you want surfaced (rain sensor, flow alarm, manual button, ...)     | board-specific GPIO binary sensors                            |
 
 If your entity IDs all share a common prefix (which is the ESPHome default,
 e.g. `switch.<device>_zone_1`, `number.<device>_zone_1_run_duration`, ...),
@@ -152,6 +158,7 @@ zones: # required, at least one zone
     switch: switch... # required
     enable_switch: switch... # optional
     duration_number: number... # optional
+    smart_irrigation_sensor: sensor... # optional, see "Smart Irrigation integration" below
 
 inputs: # optional
   - entity: binary_sensor...
@@ -170,6 +177,28 @@ never itself lockable, and the Diagnostics panel is unaffected since
 nothing in it turns water on. Anything other than exactly `docked`
 (including `unavailable`/`unknown`) locks the card - fails safe if the
 mower's state can't be confirmed.
+
+### Smart Irrigation integration
+
+Set `zones[].smart_irrigation_sensor` to a zone's
+`sensor.smart_irrigation_<zone>` entity from the
+[Smart Irrigation](https://altmenorg.github.io/HAsmartirrigation/)
+integration (calculates run durations from weather/evapotranspiration
+data) alongside that zone's `duration_number`, and:
+
+- the zone tile shows a **Suggested \<time\>** row with a one-tap check
+  button that copies the calculated duration into `duration_number` - it
+  only appears when the two differ by 5+ seconds, so it won't nag you when
+  they already match;
+- a small recalculate button (weather icon) appears in the card header,
+  calling `smart_irrigation.calculate_all_zones` - shown automatically
+  once at least one zone has `smart_irrigation_sensor` set and the
+  integration's services are available, no extra config needed.
+
+Both respect the lawnmower lockout above. For actually _running_ zones
+from Smart Irrigation's calculations on a schedule (rather than manually
+applying suggestions from the card), see the **Smart Irrigation Runner**
+blueprint below.
 
 ## Automation blueprints
 
@@ -225,6 +254,37 @@ close a valve manually, or Home Assistant restarting mid-cycle - it force-
 closes every watched switch and sends a critical notification. Point it at
 every zone switch (and the main controller switch); it's independent of the
 scheduler blueprint on purpose, so create it as a _separate_ automation.
+
+### Smart Irrigation Runner
+
+`blueprints/automation/smart_irrigation_runner.yaml`
+([Gitea raw](https://git.kjan.de/jank/hassio-irrigation-card/raw/branch/main/blueprints/automation/smart_irrigation_runner.yaml) /
+[GitHub raw](https://raw.githubusercontent.com/Milkman337/hassio-irrigation-card/main/blueprints/automation/smart_irrigation_runner.yaml))
+
+An alternative to the Advanced Irrigation Scheduler for zones whose timing
+you want driven by the
+[Smart Irrigation](https://altmenorg.github.io/HAsmartirrigation/)
+integration instead of a fixed schedule. **Don't run both blueprints
+against the same zones** - they'd each try to water them independently.
+
+- **Trigger**: Smart Irrigation's own `smart_irrigation_start_irrigation_all_zones`
+  event (its documented mechanism for "finish before sunrise" scheduling,
+  skip-day aware on Smart Irrigation's side already).
+- **Zones**: ordered `zone_switches` paired by index with `duration_sensors`
+  (each zone's `sensor.smart_irrigation_<zone>` entity) - runs each zone for
+  exactly that many seconds, skipping zones Smart Irrigation calculated as
+  needing 0s, then calls `smart_irrigation.reset_bucket` on that zone's
+  sensor afterward so it doesn't think the deficit is still outstanding.
+- **No rain/freeze skip conditions** - that's the entire point of Smart
+  Irrigation's evapotranspiration calculation; duplicating it here would
+  just fight it.
+- **Safety**: an optional `lawnmower_entity` and `vacation_mode_boolean`
+  can still skip the whole run (added proactively, same rationale as the
+  card's [lawnmower lockout](#robot-lawnmower-lockout) - a scheduled
+  automation runs whether or not the card is even open). Pair with the
+  **Irrigation Watchdog** blueprint above the same way as the other
+  scheduler, rather than reimplementing a timeout here.
+- **Notifications**: same start/skip/finish pattern as the other scheduler.
 
 ### Suggested helpers
 
