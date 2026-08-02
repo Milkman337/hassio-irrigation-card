@@ -78,6 +78,7 @@ unset just hides that part of the UI.
 | `internet_switch`                 | `switch`         | Device-level network/API access toggle (if your board exposes one)                          | board-specific                                                |
 | `device_tracker`                  | `device_tracker` | Online/offline + IP for the controller                                                      | automatic if the device uses the `wifi:`/`api:` components    |
 | `lawnmower_entity`                | `lawn_mower`     | Locks the whole card unless this entity is `docked` - see [below](#robot-lawnmower-lockout) | not part of the controller - your mower integration           |
+| `secondary_program_automation`    | `automation`     | Adds a second button that triggers it on demand - see [below](#secondary-program-button)    | not part of the controller - any automation you choose        |
 | `zones[].switch`                  | `switch`         | Opens/closes that zone's valve                                                              | per-valve switch                                              |
 | `zones[].enable_switch`           | `switch`         | Include/exclude the zone from the auto sequence                                             | per-valve `enable_switch`                                     |
 | `zones[].duration_number`         | `number`         | That zone's run duration, in seconds                                                        | per-valve `run_duration_number`                               |
@@ -151,6 +152,8 @@ repeat_number: number...
 internet_switch: switch...
 device_tracker: device_tracker...
 lawnmower_entity: lawn_mower... # optional, see "Robot lawnmower lockout" below
+secondary_program_automation: automation... # optional, see "Secondary program button" below
+secondary_program_label: Start Calculated Program # optional, that button's label
 
 zones: # required, at least one zone
   - name: Front Lawn # optional, falls back to friendly_name / "Zone N"
@@ -199,6 +202,25 @@ Both respect the lawnmower lockout above. For actually _running_ zones
 from Smart Irrigation's calculations on a schedule (rather than manually
 applying suggestions from the card), see the **Smart Irrigation Runner**
 blueprint below.
+
+### Secondary program button
+
+Set `secondary_program_automation` to any `automation.*` entity and a
+second button appears next to Start/Stop Program, labeled
+`secondary_program_label` (default "Start Calculated Program"). Tapping
+it calls `automation.trigger` on that entity - it runs right now instead
+of waiting for its normal trigger, while any conditions/skip logic inside
+the automation's own actions (rain delay, vacation mode, lawnmower, ...)
+still apply exactly as if it had triggered normally. Respects this card's
+own lawnmower lockout too, and is disabled while the target automation
+itself is off.
+
+The obvious pairing: create an automation from the **Smart Irrigation
+Runner** blueprint below, then point this at its entity_id (Settings ->
+Automations & Scenes -> find it -> copy the entity ID) so you can run a
+weather-calculated cycle on demand instead of only at its scheduled event.
+Nothing about this button is Smart-Irrigation-specific though - point it
+at any automation you want a manual trigger for.
 
 ## Automation blueprints
 

@@ -211,7 +211,11 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
         </div>
 
         ${locked ? this._renderLockedNote() : nothing}
-        ${controllerConfigured ? this._renderMasterRow(controllerOn, zoneStates, locked) : nothing}
+        ${
+          controllerConfigured || this._config.secondary_program_automation
+            ? this._renderMasterRow(controllerOn, zoneStates, locked)
+            : nothing
+        }
         ${zoneStates.length > 0 ? this._renderZones(zoneStates, locked) : this._renderEmptyState()}
         ${this._renderProgramPanel(locked)}
         ${this._config.show_diagnostics ? this._renderDiagnosticsPanel() : nothing}
@@ -250,16 +254,39 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     zoneStates: ZoneRuntimeState[],
     locked: boolean
   ): TemplateResult {
+    const secondaryEntity = this._config.secondary_program_automation;
+    const secondaryState = secondaryEntity ? this.hass.states[secondaryEntity] : undefined;
+    const secondaryDisabled =
+      locked || !secondaryEntity || !secondaryState || secondaryState.state === "off";
+    const secondaryLabel = this._config.secondary_program_label ?? "Start Calculated Program";
+
     return html`
       <div class="master-row">
-        <button
-          class="master-button"
-          ?disabled=${locked}
-          @click=${() => !locked && this._toggleSwitch(this._config.controller_switch!)}
-        >
-          <ha-icon icon=${controllerOn ? "mdi:stop" : "mdi:play"}></ha-icon>
-          ${controllerOn ? "Stop Program" : "Start Program"}
-        </button>
+        ${
+          this._config.controller_switch
+            ? html`<button
+                class="master-button"
+                ?disabled=${locked}
+                @click=${() => !locked && this._toggleSwitch(this._config.controller_switch!)}
+              >
+                <ha-icon icon=${controllerOn ? "mdi:stop" : "mdi:play"}></ha-icon>
+                ${controllerOn ? "Stop Program" : "Start Program"}
+              </button>`
+            : nothing
+        }
+        ${
+          secondaryEntity
+            ? html`<button
+                class="secondary-button"
+                ?disabled=${secondaryDisabled}
+                title="Manually trigger this automation now"
+                @click=${() => !secondaryDisabled && this._triggerAutomation(secondaryEntity)}
+              >
+                <ha-icon icon="mdi:flash-auto"></ha-icon>
+                ${secondaryLabel}
+              </button>`
+            : nothing
+        }
         <ha-icon-button
           class="stop-all"
           title="Emergency stop - closes every valve immediately"
@@ -639,6 +666,10 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
   private _recalculateSmartIrrigation = (): void => {
     this.hass.callService("smart_irrigation", "calculate_all_zones", {});
   };
+
+  private _triggerAutomation(entityId: string): void {
+    this.hass.callService("automation", "trigger", { entity_id: entityId });
+  }
 
   private _applySmartIrrigationDuration(zone: ZoneRuntimeState): void {
     const sensor = zone.config.smart_irrigation_sensor;

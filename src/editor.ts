@@ -157,6 +157,24 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
           ${this._entityPicker("multiplier_number", "Duration multiplier", ["number"])}
           ${this._entityPicker("repeat_number", "Repeat count", ["number"])}
         </div>
+        ${this._entityPicker(
+          "secondary_program_automation",
+          "Secondary program automation (optional)",
+          ["automation"]
+        )}
+        <ha-textfield
+          label="Secondary button label"
+          placeholder="Start Calculated Program"
+          .value=${this._config.secondary_program_label ?? ""}
+          @input=${(e: Event) =>
+            this._set("secondary_program_label", (e.target as HTMLInputElement).value)}
+        ></ha-textfield>
+        <p class="hint">
+          Adds a second button next to Start/Stop Program that calls
+          <code>automation.trigger</code> on the entity above - e.g. an automation created from the
+          Smart Irrigation Runner blueprint, so you can kick it off on demand instead of waiting for
+          its normal trigger.
+        </p>
       </div>
 
       <div class="section">

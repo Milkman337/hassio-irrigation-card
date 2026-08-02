@@ -122,6 +122,51 @@ export const cardStyles = css`
     filter: none;
   }
 
+  .secondary-button {
+    flex: 1 1 160px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 20px;
+    border: 1px solid var(--primary-color);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--primary-color);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background 150ms ease,
+      transform 100ms ease;
+  }
+
+  .secondary-button ha-icon {
+    --mdc-icon-size: 20px;
+  }
+
+  .secondary-button:hover {
+    background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+  }
+
+  .secondary-button:active {
+    transform: scale(0.98);
+    background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.16);
+  }
+
+  .secondary-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  .secondary-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: transparent;
+  }
+
   .locked-note {
     display: flex;
     align-items: center;

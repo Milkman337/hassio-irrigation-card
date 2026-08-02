@@ -34,6 +34,16 @@ export interface IrrigationCardConfig extends LovelaceCardConfig {
   multiplier_number?: string;
   repeat_number?: string;
 
+  /**
+   * Optional automation.* entity for a secondary button next to Start/Stop
+   * Program - e.g. an automation created from the Smart Irrigation Runner
+   * blueprint. Tapping it calls automation.trigger; any conditions/skip
+   * logic inside the automation's own actions still applies.
+   */
+  secondary_program_automation?: string;
+  /** Label for that button. Default: "Start Calculated Program". */
+  secondary_program_label?: string;
+
   /** Misc. device-level entities, all optional */
   internet_switch?: string;
   device_tracker?: string;
