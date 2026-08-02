@@ -363,7 +363,7 @@ export const cardStyles = css`
 
   .zone-ai-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 4px;
     font-size: 0.85rem;
     color: var(--primary-color);
@@ -372,13 +372,14 @@ export const cardStyles = css`
   .zone-ai-row ha-icon {
     --mdc-icon-size: 16px;
     flex-shrink: 0;
+    margin-top: 2px;
   }
 
   .zone-ai-row span {
     flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: break-word;
   }
 
   .zone-ai-row ha-icon-button {
