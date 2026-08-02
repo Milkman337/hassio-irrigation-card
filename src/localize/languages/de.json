@@ -1,0 +1,102 @@
+{
+  "common": {
+    "zone_n": "Zone {n}",
+    "input_n": "Eingang {n}"
+  },
+  "card": {
+    "default_title": "Bewässerung",
+    "status": {
+      "idle": "Inaktiv",
+      "running": "Läuft",
+      "running_zone": "Läuft: {zone}",
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "master": {
+      "start": "Programm starten",
+      "stop": "Programm stoppen",
+      "stop_all": "Not-Stopp – schließt sofort alle Ventile",
+      "trigger_automation": "Diese Automatisierung jetzt manuell auslösen",
+      "start_calculated": "Berechnetes Programm starten"
+    },
+    "zone": {
+      "unavailable": "Nicht verfügbar",
+      "disabled": "Deaktiviert",
+      "off": "Aus",
+      "off_duration": "Aus · {duration}",
+      "left": "noch {duration}",
+      "suggested": "Empfohlen: {duration}",
+      "apply_suggested": "Empfohlene Dauer übernehmen"
+    },
+    "empty_state": "Noch keine Zonen konfiguriert. Bearbeite diese Karte, um Bewässerungszonen hinzuzufügen.",
+    "program_panel": {
+      "title": "Programmeinstellungen",
+      "auto_advance": "Automatisch weiterschalten",
+      "auto_advance_desc": "Automatisch zur nächsten aktivierten Zone wechseln",
+      "reverse": "Umgekehrte Reihenfolge",
+      "reverse_desc": "Zonenreihenfolge rückwärts abarbeiten",
+      "multiplier": "Dauer-Multiplikator",
+      "multiplier_desc": "Skaliert die Laufzeit jeder Zone, z. B. je nach Jahreszeit",
+      "repeat": "Wiederholungen",
+      "repeat_desc": "Wie oft das gesamte Programm zusätzlich wiederholt wird",
+      "estimate": "Geschätzte Gesamtlaufzeit: {duration}"
+    },
+    "diagnostics": {
+      "title": "Diagnose",
+      "internet_access": "Internetzugriff",
+      "internet_access_desc": "Netzwerk-/API-Zugriff des Geräts",
+      "tracker": "Verbindung des Controllers"
+    },
+    "locked_note": "Mähroboter ist nicht angedockt – die Bewässerungssteuerung ist gesperrt, bis er zu Hause ist.",
+    "recalculate": "Smart-Irrigation-Dauern neu berechnen"
+  },
+  "editor": {
+    "card": {
+      "title": "Karte",
+      "title_label": "Titel",
+      "compact": "Kompaktmodus (Dauer-Stepper pro Zone ausblenden)",
+      "start_collapsed": "Programmeinstellungen/Diagnose eingeklappt starten",
+      "show_diagnostics": "Diagnose-Bereich anzeigen"
+    },
+    "auto_detect": {
+      "title": "Automatische Erkennung anhand Entitäts-Präfix",
+      "hint": "Falls alle Entitäten deines Controllers ein gemeinsames Präfix teilen (z. B. {example}), gib es hier ein und klicke auf Erkennen, um Zonen und Controller-Entitäten unten automatisch auszufüllen. Du kannst danach trotzdem alles bearbeiten.",
+      "prefix_label": "Entitäts-ID-Präfix (optional)",
+      "button": "Erkennen"
+    },
+    "controller": {
+      "title": "Controller-Entitäten",
+      "controller_switch": "Haupt-Start/Stopp-Schalter",
+      "auto_advance_switch": "Schalter für automatisches Weiterschalten",
+      "reverse_switch": "Schalter für umgekehrte Reihenfolge",
+      "multiplier_number": "Dauer-Multiplikator",
+      "repeat_number": "Wiederholungsanzahl",
+      "secondary_automation": "Sekundäre Programm-Automatisierung (optional)",
+      "secondary_label": "Beschriftung des zweiten Buttons",
+      "secondary_hint": "Fügt einen zweiten Button neben Programm starten/stoppen hinzu, der automation.trigger für die obige Entität aufruft – z. B. eine Automatisierung aus dem Smart Irrigation Runner-Blueprint, damit du sie bei Bedarf auslösen kannst, statt auf ihren normalen Trigger zu warten."
+    },
+    "safety": {
+      "title": "Sicherheit",
+      "lawnmower": "Mähroboter (optional)",
+      "hint": "Falls gesetzt, werden der Hauptschalter, alle Zonenkacheln und die Programmeinstellungen gesperrt, solange dieser Mähroboter nicht \"angedockt\" ist – der Not-Stopp bleibt immer aktiv. Leer lassen zum Deaktivieren."
+    },
+    "zones": {
+      "title": "Zonen",
+      "name": "Name",
+      "switch": "Zonenschalter",
+      "enable_switch": "Aktivierungsschalter (optional)",
+      "duration_number": "Laufzeit-Nummer (optional)",
+      "smart_irrigation_sensor": "Smart-Irrigation-Dauersensor (optional)",
+      "add": "Zone hinzufügen"
+    },
+    "diagnostics": {
+      "title": "Diagnose",
+      "internet_switch": "Internetzugriffs-Schalter",
+      "device_tracker": "Controller-Device-Tracker",
+      "inputs_title": "Sensor-Eingänge",
+      "input_label": "Beschriftung",
+      "input_entity": "Entität",
+      "add_input": "Eingang hinzufügen"
+    }
+  }
+}

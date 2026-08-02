@@ -26,6 +26,7 @@ import {
   numberState,
 } from "./helpers";
 import type { InputConfig, IrrigationCardConfig, ZoneRuntimeState } from "./types";
+import { localize } from "./localize/localize";
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -58,20 +59,21 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
   }
 
   public static getStubConfig(hass: HomeAssistant): IrrigationCardConfig {
+    const title = localize(hass, "card.default_title");
     const discovered = discoverSprinklerConfig(hass);
     if (discovered.zones.length > 0) {
       return {
         type: `custom:${CARD_TYPE}`,
-        title: "Irrigation",
+        title,
         ...discovered,
       } as IrrigationCardConfig;
     }
     return {
       type: `custom:${CARD_TYPE}`,
-      title: "Irrigation",
+      title,
       zones: [
-        { switch: "switch.REPLACE_ME_zone_1", name: "Zone 1" },
-        { switch: "switch.REPLACE_ME_zone_2", name: "Zone 2" },
+        { switch: "switch.REPLACE_ME_zone_1", name: localize(hass, "common.zone_n", { n: 1 }) },
+        { switch: "switch.REPLACE_ME_zone_2", name: localize(hass, "common.zone_n", { n: 2 }) },
       ],
     };
   }
@@ -120,6 +122,10 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
       clearInterval(this._tickHandle);
       this._tickHandle = undefined;
     }
+  }
+
+  private _t(key: string, vars?: Record<string, string | number>): string {
+    return localize(this.hass, key, vars);
   }
 
   private get _multiplier(): number {
@@ -179,20 +185,28 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
         <div class="header">
           <div class="header-title">
             <ha-icon icon=${anyActive ? MASTER_ICON_ON : MASTER_ICON_OFF}></ha-icon>
-            <h1>${this._config.title ?? "Irrigation"}</h1>
+            <h1>${this._config.title ?? this._t("card.default_title")}</h1>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
             ${
               anyActive
                 ? html`<span class="status-pill running"
-                    >Running${activeZone ? `: ${this._zoneLabel(activeZone)}` : ""}</span
+                    >${
+                      activeZone
+                        ? this._t("card.status.running_zone", {
+                            zone: this._zoneLabel(activeZone),
+                          })
+                        : this._t("card.status.running")
+                    }</span
                   >`
-                : html`<span class="status-pill">Idle</span>`
+                : html`<span class="status-pill">${this._t("card.status.idle")}</span>`
             }
             ${
               trackerConfigured
                 ? html`<span class="status-pill ${trackerOnline ? "online" : "offline"}"
-                    >${trackerOnline ? "Online" : "Offline"}</span
+                    >${
+                      trackerOnline ? this._t("card.status.online") : this._t("card.status.offline")
+                    }</span
                   >`
                 : nothing
             }
@@ -200,7 +214,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
               this._smartIrrigationAvailable
                 ? html`<ha-icon-button
                     class="recalculate"
-                    title="Recalculate Smart Irrigation durations"
+                    title=${this._t("card.recalculate")}
                     @click=${this._recalculateSmartIrrigation}
                   >
                     <ha-icon icon="mdi:weather-partly-rainy"></ha-icon>
@@ -227,7 +241,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     return (
       zone.config.name ??
       this.hass.states[zone.config.switch]?.attributes?.friendly_name ??
-      `Zone ${zone.index + 1}`
+      this._t("common.zone_n", { n: zone.index + 1 })
     );
   }
 
@@ -235,7 +249,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     return html`
       <div class="empty-state">
         <ha-icon icon="mdi:sprinkler-variant" style="--mdc-icon-size: 32px;"></ha-icon>
-        <span>No zones configured yet. Edit this card to add your irrigation zones.</span>
+        <span>${this._t("card.empty_state")}</span>
       </div>
     `;
   }
@@ -244,7 +258,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     return html`
       <div class="locked-note">
         <ha-icon icon="mdi:robot-mower"></ha-icon>
-        <span>Mower isn't docked - irrigation controls are locked until it's home.</span>
+        <span>${this._t("card.locked_note")}</span>
       </div>
     `;
   }
@@ -258,7 +272,8 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     const secondaryState = secondaryEntity ? this.hass.states[secondaryEntity] : undefined;
     const secondaryDisabled =
       locked || !secondaryEntity || !secondaryState || secondaryState.state === "off";
-    const secondaryLabel = this._config.secondary_program_label ?? "Start Calculated Program";
+    const secondaryLabel =
+      this._config.secondary_program_label ?? this._t("card.master.start_calculated");
 
     return html`
       <div class="master-row">
@@ -270,7 +285,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                 @click=${() => !locked && this._toggleSwitch(this._config.controller_switch!)}
               >
                 <ha-icon icon=${controllerOn ? "mdi:stop" : "mdi:play"}></ha-icon>
-                ${controllerOn ? "Stop Program" : "Start Program"}
+                ${controllerOn ? this._t("card.master.stop") : this._t("card.master.start")}
               </button>`
             : nothing
         }
@@ -279,7 +294,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
             ? html`<button
                 class="secondary-button"
                 ?disabled=${secondaryDisabled}
-                title="Manually trigger this automation now"
+                title=${this._t("card.master.trigger_automation")}
                 @click=${() => !secondaryDisabled && this._triggerAutomation(secondaryEntity)}
               >
                 <ha-icon icon="mdi:flash-auto"></ha-icon>
@@ -289,7 +304,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
         }
         <ha-icon-button
           class="stop-all"
-          title="Emergency stop - closes every valve immediately"
+          title=${this._t("card.master.stop_all")}
           @click=${() => this._stopAll(zoneStates)}
         >
           <ha-icon icon="mdi:alert-octagon-outline"></ha-icon>
@@ -316,14 +331,14 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
       .join(" ");
 
     const stateLabel = zone.unavailable
-      ? "Unavailable"
+      ? this._t("card.zone.unavailable")
       : zone.active
-        ? `${formatDuration(zone.remainingSeconds)} left`
+        ? this._t("card.zone.left", { duration: formatDuration(zone.remainingSeconds) })
         : !zone.enabled
-          ? "Disabled"
+          ? this._t("card.zone.disabled")
           : zone.config.duration_number
-            ? `Off · ${formatDuration(zone.durationSeconds)}`
-            : "Off";
+            ? this._t("card.zone.off_duration", { duration: formatDuration(zone.durationSeconds) })
+            : this._t("card.zone.off");
 
     return html`
       <div
@@ -408,9 +423,9 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     return html`
       <div class="zone-ai-row">
         <ha-icon icon="mdi:weather-partly-rainy"></ha-icon>
-        <span>Suggested ${formatDuration(recommended)}</span>
+        <span>${this._t("card.zone.suggested", { duration: formatDuration(recommended) })}</span>
         <ha-icon-button
-          title="Apply suggested duration"
+          title=${this._t("card.zone.apply_suggested")}
           ?disabled=${locked}
           @click=${(e: Event) => {
             e.stopPropagation();
@@ -442,7 +457,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
           class="panel-header ${this._programCollapsed ? "collapsed" : ""}"
           @click=${() => (this._programCollapsed = !this._programCollapsed)}
         >
-          <h2>Program Settings</h2>
+          <h2>${this._t("card.program_panel.title")}</h2>
           <ha-icon icon="mdi:chevron-down"></ha-icon>
         </div>
         ${
@@ -454,8 +469,8 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                     cfg.auto_advance_switch
                       ? this._renderSettingSwitch(
                           cfg.auto_advance_switch,
-                          "Auto-advance",
-                          "Automatically move on to the next enabled zone",
+                          this._t("card.program_panel.auto_advance"),
+                          this._t("card.program_panel.auto_advance_desc"),
                           locked
                         )
                       : nothing
@@ -464,8 +479,8 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                     cfg.reverse_switch
                       ? this._renderSettingSwitch(
                           cfg.reverse_switch,
-                          "Reverse order",
-                          "Run the zone sequence back to front",
+                          this._t("card.program_panel.reverse"),
+                          this._t("card.program_panel.reverse_desc"),
                           locked
                         )
                       : nothing
@@ -478,9 +493,11 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                             style="flex-direction:column; align-items:stretch; gap:4px;"
                           >
                             <div class="setting-label">
-                              <span class="primary">Duration multiplier</span>
+                              <span class="primary"
+                                >${this._t("card.program_panel.multiplier")}</span
+                              >
                               <span class="secondary"
-                                >Scales every zone's run time, e.g. for the season</span
+                                >${this._t("card.program_panel.multiplier_desc")}</span
                               >
                             </div>
                             <div class="slider-row">
@@ -508,8 +525,9 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                   ${
                     cfg.show_multiplier_preview !== false
                       ? html`<span class="estimate"
-                          >Estimated total runtime:
-                          ${formatDuration(this._estimateTotalSeconds)}</span
+                          >${this._t("card.program_panel.estimate", {
+                            duration: formatDuration(this._estimateTotalSeconds),
+                          })}</span
                         >`
                       : nothing
                   }
@@ -549,8 +567,8 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
     return html`
       <div class="setting-row">
         <div class="setting-label">
-          <span class="primary">Repeat cycles</span>
-          <span class="secondary">How many extra times to repeat the whole program</span>
+          <span class="primary">${this._t("card.program_panel.repeat")}</span>
+          <span class="secondary">${this._t("card.program_panel.repeat_desc")}</span>
         </div>
         <div class="stepper">
           <ha-icon-button
@@ -583,7 +601,7 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
           class="panel-header ${this._diagnosticsCollapsed ? "collapsed" : ""}"
           @click=${() => (this._diagnosticsCollapsed = !this._diagnosticsCollapsed)}
         >
-          <h2>Diagnostics</h2>
+          <h2>${this._t("card.diagnostics.title")}</h2>
           <ha-icon icon="mdi:chevron-down"></ha-icon>
         </div>
         ${
@@ -604,8 +622,8 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
                     cfg.internet_switch
                       ? this._renderSettingSwitch(
                           cfg.internet_switch,
-                          "Internet access",
-                          "Device network/API access"
+                          this._t("card.diagnostics.internet_access"),
+                          this._t("card.diagnostics.internet_access_desc")
                         )
                       : nothing
                   }
@@ -643,11 +661,11 @@ export class HassioIrrigationCard extends LitElement implements LovelaceCard {
         style="cursor:pointer;"
       >
         <div class="setting-label">
-          <span class="primary">Controller connectivity</span>
+          <span class="primary">${this._t("card.diagnostics.tracker")}</span>
           <span class="secondary">${ip ? `IP ${ip}` : entity}</span>
         </div>
         <span class="status-pill ${online ? "online" : "offline"}"
-          >${online ? "Online" : "Offline"}</span
+          >${online ? this._t("card.status.online") : this._t("card.status.offline")}</span
         >
       </div>
     `;

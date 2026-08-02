@@ -4,6 +4,7 @@ import { fireEvent, type HomeAssistant, type LovelaceCardEditor } from "custom-c
 
 import { CARD_EDITOR_TYPE } from "./const";
 import { discoverSprinklerConfig } from "./helpers";
+import { localize } from "./localize/localize";
 import type { InputConfig, IrrigationCardConfig, ZoneConfig } from "./types";
 
 interface EntityPickerChangeEvent extends CustomEvent {
@@ -98,31 +99,35 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
     }
   `;
 
+  private _t(key: string, vars?: Record<string, string | number>): string {
+    return localize(this.hass, key, vars);
+  }
+
   protected render(): TemplateResult {
     if (!this.hass || !this._config) return html``;
 
     return html`
       <div class="section">
-        <h3>Card</h3>
+        <h3>${this._t("editor.card.title")}</h3>
         <ha-textfield
-          label="Title"
+          label=${this._t("editor.card.title_label")}
           .value=${this._config.title ?? ""}
           @input=${(e: Event) => this._set("title", (e.target as HTMLInputElement).value)}
         ></ha-textfield>
-        <ha-formfield label="Compact mode (hide per-zone duration steppers)">
+        <ha-formfield label=${this._t("editor.card.compact")}>
           <ha-switch
             .checked=${!!this._config.compact}
             @change=${(e: Event) => this._set("compact", (e.target as HTMLInputElement).checked)}
           ></ha-switch>
         </ha-formfield>
-        <ha-formfield label="Start Program Settings / Diagnostics collapsed">
+        <ha-formfield label=${this._t("editor.card.start_collapsed")}>
           <ha-switch
             .checked=${!!this._config.start_collapsed}
             @change=${(e: Event) =>
               this._set("start_collapsed", (e.target as HTMLInputElement).checked)}
           ></ha-switch>
         </ha-formfield>
-        <ha-formfield label="Show diagnostics panel">
+        <ha-formfield label=${this._t("editor.card.show_diagnostics")}>
           <ha-switch
             .checked=${this._config.show_diagnostics !== false}
             @change=${(e: Event) => this._set("show_diagnostics", (e.target as HTMLInputElement).checked)}
@@ -131,79 +136,91 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
       </div>
 
       <div class="section">
-        <h3>Auto-detect from entity prefix</h3>
+        <h3>${this._t("editor.auto_detect.title")}</h3>
         <p class="hint">
-          If your controller's entities all share a common prefix (e.g.
-          <code>garten_sprengler_controller</code>), enter it here and click detect to auto-fill
-          zones and controller entities below. You can still edit everything afterwards.
+          ${this._t("editor.auto_detect.hint", { example: "garten_sprengler_controller" })}
         </p>
         <div class="row">
           <ha-textfield
             style="flex:1"
-            label="Entity ID prefix (optional)"
+            label=${this._t("editor.auto_detect.prefix_label")}
             .value=${this._prefixHint}
             @input=${(e: Event) => (this._prefixHint = (e.target as HTMLInputElement).value)}
           ></ha-textfield>
-          <button class="btn" @click=${this._autoDetect}>Detect</button>
+          <button class="btn" @click=${this._autoDetect}>
+            ${this._t("editor.auto_detect.button")}
+          </button>
         </div>
       </div>
 
       <div class="section">
-        <h3>Controller entities</h3>
-        ${this._entityPicker("controller_switch", "Main run/stop switch", ["switch"])}
-        ${this._entityPicker("auto_advance_switch", "Auto-advance switch", ["switch"])}
-        ${this._entityPicker("reverse_switch", "Reverse-order switch", ["switch"])}
+        <h3>${this._t("editor.controller.title")}</h3>
+        ${this._entityPicker("controller_switch", this._t("editor.controller.controller_switch"), [
+          "switch",
+        ])}
+        ${this._entityPicker(
+          "auto_advance_switch",
+          this._t("editor.controller.auto_advance_switch"),
+          ["switch"]
+        )}
+        ${this._entityPicker("reverse_switch", this._t("editor.controller.reverse_switch"), [
+          "switch",
+        ])}
         <div class="grid-2">
-          ${this._entityPicker("multiplier_number", "Duration multiplier", ["number"])}
-          ${this._entityPicker("repeat_number", "Repeat count", ["number"])}
+          ${this._entityPicker(
+            "multiplier_number",
+            this._t("editor.controller.multiplier_number"),
+            ["number"]
+          )}
+          ${this._entityPicker("repeat_number", this._t("editor.controller.repeat_number"), [
+            "number",
+          ])}
         </div>
         ${this._entityPicker(
           "secondary_program_automation",
-          "Secondary program automation (optional)",
+          this._t("editor.controller.secondary_automation"),
           ["automation"]
         )}
         <ha-textfield
-          label="Secondary button label"
-          placeholder="Start Calculated Program"
+          label=${this._t("editor.controller.secondary_label")}
+          placeholder=${this._t("card.master.start_calculated")}
           .value=${this._config.secondary_program_label ?? ""}
           @input=${(e: Event) =>
             this._set("secondary_program_label", (e.target as HTMLInputElement).value)}
         ></ha-textfield>
-        <p class="hint">
-          Adds a second button next to Start/Stop Program that calls
-          <code>automation.trigger</code> on the entity above - e.g. an automation created from the
-          Smart Irrigation Runner blueprint, so you can kick it off on demand instead of waiting for
-          its normal trigger.
-        </p>
+        <p class="hint">${this._t("editor.controller.secondary_hint")}</p>
       </div>
 
       <div class="section">
-        <h3>Safety</h3>
-        ${this._entityPicker("lawnmower_entity", "Robot lawnmower (optional)", ["lawn_mower"])}
-        <p class="hint">
-          If set, the master switch, zone tiles and Program Settings all lock whenever this mower's
-          state isn't "docked" - stop-all always stays active. Leave empty to disable.
-        </p>
+        <h3>${this._t("editor.safety.title")}</h3>
+        ${this._entityPicker("lawnmower_entity", this._t("editor.safety.lawnmower"), [
+          "lawn_mower",
+        ])}
+        <p class="hint">${this._t("editor.safety.hint")}</p>
       </div>
 
       <div class="section">
-        <h3>Zones</h3>
+        <h3>${this._t("editor.zones.title")}</h3>
         ${this._config.zones.map((zone, i) => this._renderZoneEditor(zone, i))}
         <button class="btn" @click=${this._addZone}>
           <ha-icon icon="mdi:plus"></ha-icon>
-          Add zone
+          ${this._t("editor.zones.add")}
         </button>
       </div>
 
       <div class="section">
-        <h3>Diagnostics</h3>
-        ${this._entityPicker("internet_switch", "Internet access switch", ["switch"])}
-        ${this._entityPicker("device_tracker", "Controller device tracker", ["device_tracker"])}
-        <h3 style="margin-top:8px;">Sensor inputs</h3>
+        <h3>${this._t("editor.diagnostics.title")}</h3>
+        ${this._entityPicker("internet_switch", this._t("editor.diagnostics.internet_switch"), [
+          "switch",
+        ])}
+        ${this._entityPicker("device_tracker", this._t("editor.diagnostics.device_tracker"), [
+          "device_tracker",
+        ])}
+        <h3 style="margin-top:8px;">${this._t("editor.diagnostics.inputs_title")}</h3>
         ${(this._config.inputs ?? []).map((input, i) => this._renderInputEditor(input, i))}
         <button class="btn" @click=${this._addInput}>
           <ha-icon icon="mdi:plus"></ha-icon>
-          Add input
+          ${this._t("editor.diagnostics.add_input")}
         </button>
       </div>
     `;
@@ -213,23 +230,30 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
     return html`
       <div class="item-card">
         <div class="item-header">
-          <b>${zone.name || `Zone ${index + 1}`}</b>
+          <b>${zone.name || this._t("common.zone_n", { n: index + 1 })}</b>
           <ha-icon-button class="remove" @click=${() => this._removeZone(index)}>
             <ha-icon icon="mdi:delete-outline"></ha-icon>
           </ha-icon-button>
         </div>
         <ha-textfield
-          label="Name"
+          label=${this._t("editor.zones.name")}
           .value=${zone.name ?? ""}
           @input=${(e: Event) => this._updateZone(index, { name: (e.target as HTMLInputElement).value })}
         ></ha-textfield>
-        ${this._zoneEntityPicker(index, "switch", "Zone switch", ["switch"])}
-        ${this._zoneEntityPicker(index, "enable_switch", "Enable switch (optional)", ["switch"])}
-        ${this._zoneEntityPicker(index, "duration_number", "Run duration number (optional)", ["number"])}
+        ${this._zoneEntityPicker(index, "switch", this._t("editor.zones.switch"), ["switch"])}
+        ${this._zoneEntityPicker(index, "enable_switch", this._t("editor.zones.enable_switch"), [
+          "switch",
+        ])}
+        ${this._zoneEntityPicker(
+          index,
+          "duration_number",
+          this._t("editor.zones.duration_number"),
+          ["number"]
+        )}
         ${this._zoneEntityPicker(
           index,
           "smart_irrigation_sensor",
-          "Smart Irrigation duration sensor (optional)",
+          this._t("editor.zones.smart_irrigation_sensor"),
           ["sensor"]
         )}
       </div>
@@ -240,13 +264,13 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
     return html`
       <div class="item-card">
         <div class="item-header">
-          <b>${input.name || input.entity || `Input ${index + 1}`}</b>
+          <b>${input.name || input.entity || this._t("common.input_n", { n: index + 1 })}</b>
           <ha-icon-button class="remove" @click=${() => this._removeInput(index)}>
             <ha-icon icon="mdi:delete-outline"></ha-icon>
           </ha-icon-button>
         </div>
         <ha-textfield
-          label="Label"
+          label=${this._t("editor.diagnostics.input_label")}
           .value=${input.name ?? ""}
           @input=${(e: Event) => this._updateInput(index, { name: (e.target as HTMLInputElement).value })}
         ></ha-textfield>
@@ -300,7 +324,7 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
       <ha-entity-picker
         .hass=${this.hass}
         .value=${input.entity ?? ""}
-        .label=${"Entity"}
+        .label=${this._t("editor.diagnostics.input_entity")}
         .includeDomains=${["binary_sensor"]}
         allow-custom-entity
         @value-changed=${(e: EntityPickerChangeEvent) => this._updateInput(index, { entity: e.detail.value })}
@@ -323,7 +347,7 @@ export class HassioIrrigationCardEditor extends LitElement implements LovelaceCa
   private _addZone(): void {
     const zones = [
       ...this._config.zones,
-      { switch: "", name: `Zone ${this._config.zones.length + 1}` },
+      { switch: "", name: this._t("common.zone_n", { n: this._config.zones.length + 1 }) },
     ];
     this._config = { ...this._config, zones };
     this._emit();

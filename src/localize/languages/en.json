@@ -1,0 +1,102 @@
+{
+  "common": {
+    "zone_n": "Zone {n}",
+    "input_n": "Input {n}"
+  },
+  "card": {
+    "default_title": "Irrigation",
+    "status": {
+      "idle": "Idle",
+      "running": "Running",
+      "running_zone": "Running: {zone}",
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "master": {
+      "start": "Start Program",
+      "stop": "Stop Program",
+      "stop_all": "Emergency stop - closes every valve immediately",
+      "trigger_automation": "Manually trigger this automation now",
+      "start_calculated": "Start Calculated Program"
+    },
+    "zone": {
+      "unavailable": "Unavailable",
+      "disabled": "Disabled",
+      "off": "Off",
+      "off_duration": "Off · {duration}",
+      "left": "{duration} left",
+      "suggested": "Suggested {duration}",
+      "apply_suggested": "Apply suggested duration"
+    },
+    "empty_state": "No zones configured yet. Edit this card to add your irrigation zones.",
+    "program_panel": {
+      "title": "Program Settings",
+      "auto_advance": "Auto-advance",
+      "auto_advance_desc": "Automatically move on to the next enabled zone",
+      "reverse": "Reverse order",
+      "reverse_desc": "Run the zone sequence back to front",
+      "multiplier": "Duration multiplier",
+      "multiplier_desc": "Scales every zone's run time, e.g. for the season",
+      "repeat": "Repeat cycles",
+      "repeat_desc": "How many extra times to repeat the whole program",
+      "estimate": "Estimated total runtime: {duration}"
+    },
+    "diagnostics": {
+      "title": "Diagnostics",
+      "internet_access": "Internet access",
+      "internet_access_desc": "Device network/API access",
+      "tracker": "Controller connectivity"
+    },
+    "locked_note": "Mower isn't docked - irrigation controls are locked until it's home.",
+    "recalculate": "Recalculate Smart Irrigation durations"
+  },
+  "editor": {
+    "card": {
+      "title": "Card",
+      "title_label": "Title",
+      "compact": "Compact mode (hide per-zone duration steppers)",
+      "start_collapsed": "Start Program Settings / Diagnostics collapsed",
+      "show_diagnostics": "Show diagnostics panel"
+    },
+    "auto_detect": {
+      "title": "Auto-detect from entity prefix",
+      "hint": "If your controller's entities all share a common prefix (e.g. {example}), enter it here and click detect to auto-fill zones and controller entities below. You can still edit everything afterwards.",
+      "prefix_label": "Entity ID prefix (optional)",
+      "button": "Detect"
+    },
+    "controller": {
+      "title": "Controller entities",
+      "controller_switch": "Main run/stop switch",
+      "auto_advance_switch": "Auto-advance switch",
+      "reverse_switch": "Reverse-order switch",
+      "multiplier_number": "Duration multiplier",
+      "repeat_number": "Repeat count",
+      "secondary_automation": "Secondary program automation (optional)",
+      "secondary_label": "Secondary button label",
+      "secondary_hint": "Adds a second button next to Start/Stop Program that calls automation.trigger on the entity above - e.g. an automation created from the Smart Irrigation Runner blueprint, so you can kick it off on demand instead of waiting for its normal trigger."
+    },
+    "safety": {
+      "title": "Safety",
+      "lawnmower": "Robot lawnmower (optional)",
+      "hint": "If set, the master switch, zone tiles and Program Settings all lock whenever this mower's state isn't \"docked\" - stop-all always stays active. Leave empty to disable."
+    },
+    "zones": {
+      "title": "Zones",
+      "name": "Name",
+      "switch": "Zone switch",
+      "enable_switch": "Enable switch (optional)",
+      "duration_number": "Run duration number (optional)",
+      "smart_irrigation_sensor": "Smart Irrigation duration sensor (optional)",
+      "add": "Add zone"
+    },
+    "diagnostics": {
+      "title": "Diagnostics",
+      "internet_switch": "Internet access switch",
+      "device_tracker": "Controller device tracker",
+      "inputs_title": "Sensor inputs",
+      "input_label": "Label",
+      "input_entity": "Entity",
+      "add_input": "Add input"
+    }
+  }
+}

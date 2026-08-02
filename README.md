@@ -60,6 +60,10 @@ run-time safety ceiling on top of whatever's already on the device.
   [Smart Irrigation](https://altmenorg.github.io/HAsmartirrigation/)
   integration (per-zone suggested durations with one-tap apply, plus a
   recalculate button) - see below for both.
+- Localized (English + German) - both the card itself and its visual
+  editor follow your Home Assistant profile language automatically,
+  falling back to English for anything untranslated. See
+  [Localization](#localization) for how to add another language.
 
 ## Required Home Assistant entities ("buttons")
 
@@ -318,6 +322,25 @@ blueprint:
   the next scheduled run(s).
 - `input_boolean.irrigation_vacation_mode` - flip on to pause the scheduler
   entirely.
+
+## Localization
+
+The card and its visual editor pick a language from
+`hass.locale.language` (falling back to `hass.language`, then English),
+independent of your Home Assistant server's language - it's whatever
+language your own profile is set to. English and German are built in;
+strings are duration-formatted values like "1h 23m" stay in that compact
+form for every language, deliberately not translated, since they're
+widely understood technical abbreviations.
+
+To add another language: copy
+[`src/localize/languages/en.json`](src/localize/languages/en.json) to
+`<lang-code>.json` in that same directory, translate every value (keep
+the `{placeholder}` tokens as-is - they get substituted at runtime),
+register it in the `LANGUAGES` map in
+[`src/localize/localize.ts`](src/localize/localize.ts), then rebuild.
+Any key you leave untranslated automatically falls back to English rather
+than breaking.
 
 ## Development
 
