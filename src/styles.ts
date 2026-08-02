@@ -192,16 +192,16 @@ export const cardStyles = css`
 
   .zones-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 12px;
   }
 
   .zone-tile {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 12px;
+    gap: 8px;
+    padding: 14px;
     border-radius: var(--ha-card-border-radius, 12px);
     background: var(--secondary-background-color);
     border: 1px solid transparent;
@@ -209,7 +209,7 @@ export const cardStyles = css`
     transition:
       background 180ms ease,
       border-color 180ms ease;
-    min-height: 108px;
+    min-height: 116px;
   }
 
   .zone-tile:hover {
@@ -286,13 +286,14 @@ export const cardStyles = css`
 
   .zone-enable {
     --mdc-theme-secondary: var(--primary-color);
-    transform: scale(0.8);
-    margin: -8px -8px 0 0;
+    transform: scale(0.9);
+    margin: -6px -6px 0 0;
   }
 
   .zone-name {
-    font-size: 0.92rem;
+    font-size: 1.05rem;
     font-weight: 500;
+    line-height: 1.3;
     color: var(--primary-text-color);
     white-space: nowrap;
     overflow: hidden;
@@ -300,7 +301,8 @@ export const cardStyles = css`
   }
 
   .zone-state {
-    font-size: 0.78rem;
+    font-size: 0.88rem;
+    line-height: 1.3;
     color: var(--secondary-text-color);
   }
 
@@ -344,7 +346,7 @@ export const cardStyles = css`
     align-items: center;
     justify-content: space-between;
     gap: 4px;
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     color: var(--secondary-text-color);
   }
 
@@ -355,20 +357,20 @@ export const cardStyles = css`
   }
 
   .stepper ha-icon-button {
-    --mdc-icon-button-size: 24px;
-    --mdc-icon-size: 16px;
+    --mdc-icon-button-size: 30px;
+    --mdc-icon-size: 18px;
   }
 
   .zone-ai-row {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     color: var(--primary-color);
   }
 
   .zone-ai-row ha-icon {
-    --mdc-icon-size: 15px;
+    --mdc-icon-size: 16px;
     flex-shrink: 0;
   }
 
@@ -380,8 +382,8 @@ export const cardStyles = css`
   }
 
   .zone-ai-row ha-icon-button {
-    --mdc-icon-button-size: 22px;
-    --mdc-icon-size: 15px;
+    --mdc-icon-button-size: 28px;
+    --mdc-icon-size: 17px;
     flex-shrink: 0;
   }
 
@@ -511,12 +513,21 @@ export const cardStyles = css`
     text-align: center;
   }
 
-  @media (max-width: 420px) {
+  @media (max-width: 480px) {
     ha-card {
       padding: 12px;
     }
     .zones-grid {
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      /* Full-width tiles rather than cramming narrower ones in - the
+         narrower packed layout made text unreadably small on phones. */
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .zone-name {
+      font-size: 1.1rem;
+    }
+    .zone-state {
+      font-size: 0.92rem;
     }
   }
 
